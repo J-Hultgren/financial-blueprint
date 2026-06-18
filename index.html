@@ -505,7 +505,7 @@
 
   /* ── MONTHLY REVIEW BAR ───────────────────────────────────── */
   .review-bar {
-    background: var(--espresso);
+    background: #2C1A0E !important;
     border-radius: 10px;
     padding: 16px 24px;
     display: flex;
@@ -517,11 +517,15 @@
 
   .review-bar .review-text {
     font-size: 13px;
-    color: rgba(255,255,255,0.7);
+    color: rgba(255,255,255,0.75) !important;
     flex: 1;
   }
 
-  .review-bar .review-text strong { color: var(--cream); }
+  .review-bar .review-text strong { color: #F5EDD9 !important; }
+
+  body.dark-mode .review-bar { background: #150B05 !important; }
+  body.dark-mode .review-bar .review-text { color: rgba(255,255,255,0.8) !important; }
+  body.dark-mode .review-bar .review-text strong { color: #F5EDD9 !important; }
   .review-bar .review-cta {
     background: var(--terra-soft);
     color: white;
@@ -963,11 +967,23 @@
     background:#1A1410; color:#F5EDD9;
   }
   body.dark-mode .sidebar { background:#0E0C08; }
+  /* Active nav item must stay readable in dark mode */
+  body.dark-mode .nav-item { color: rgba(255,255,255,0.45); }
+  body.dark-mode .nav-item:hover { color: #F5EDD9; background: rgba(255,255,255,0.06); }
+  body.dark-mode .nav-item.active { color: #F5EDD9 !important; background: rgba(255,255,255,0.08); border-left-color: var(--terra-soft); }
+  body.dark-mode .nav-section-label { color: rgba(255,255,255,0.3); }
+  body.dark-mode .sidebar-greeting .name-input { color: #F5EDD9; }
+  body.dark-mode .sidebar-greeting .hello { color: rgba(255,255,255,0.35); }
   body.dark-mode .topbar { background:#2C2416; border-color:#3A3020; }
   body.dark-mode .kpi-card { background:#2C2416; border-color:#3A3020; }
   body.dark-mode .card { background:#2C2416; border-color:#3A3020; }
   body.dark-mode .data-table tr:hover td { background:#3A3020; }
-  body.dark-mode .modal { background:#2C2416; }
+  body.dark-mode .toast { background: #1A0E06; color: #F5EDD9; }
+  body.dark-mode .close-month-btn { background: #1A0E06; }
+  body.dark-mode #dash-year-display { color: #F5EDD9; }
+  body.dark-mode .section-title { color: #F5EDD9; }
+  body.dark-mode .section-sub { color: rgba(255,255,255,0.5); }
+  body.dark-mode .card-title { color: rgba(255,255,255,0.5); }
   body.dark-mode .cal-day { background:#2C2416; border-color:#3A3020; }
 
   /* ── CONFETTI CANVAS ─────────────────────────────────────────── */
@@ -1983,17 +1999,22 @@ async function saveToSupabase() {
   if(!currentUser) return;
   setSyncStatus('syncing');
   try {
+    // Ensure we have a clean copy without circular refs
+    const payload = JSON.parse(JSON.stringify(data));
     const { error } = await supa
       .from('financial_blueprint')
       .upsert({
-        user_id: currentUser.id,  // uuid — no ::text cast needed
-        data: data,
+        user_id: currentUser.id,  // uuid type
+        data: payload,
         updated_at: new Date().toISOString()
       }, { onConflict: 'user_id' });
     if(error) {
-      console.error('Save error:', error.message, error.details, error.hint);
+      console.error('Save error:', error.message, error.code, error.details);
       setSyncStatus('error');
-      showToast(`Sync error: ${error.message}`, 4000);
+      // Show specific error to help diagnose
+      if(error.code === '42501') showToast('Sync error: RLS policy — run the SQL setup again', 5000);
+      else if(error.code === '23503') showToast('Sync error: table not found — run the SQL setup', 5000);
+      else showToast(`Sync error: ${error.message}`, 4000);
     } else {
       setSyncStatus('synced');
     }
@@ -2022,10 +2043,16 @@ async function initAppForUser() {
     data = Object.assign({}, _def, remote);
     ensureDataFields();
   }
-  // Set name from auth metadata
+  // Set name from auth metadata or saved data — never show email
   const meta = currentUser?.user_metadata;
-  if(meta?.name && !data.name) data.name = meta.name;
-  if(data.name) document.getElementById('userName').value = data.name;
+  const displayName = data.name || meta?.name || meta?.full_name || '';
+  if(displayName) {
+    data.name = displayName;
+    document.getElementById('userName').value = displayName;
+  } else {
+    // No name set yet — leave placeholder, don't show email
+    document.getElementById('userName').value = '';
+  }
 
   // Hide auth, show app
   document.getElementById('authScreen').style.display = 'none';
@@ -2057,6 +2084,13 @@ async function initAppForUser() {
   if(modal) modal.addEventListener('click', function(e){ if(e.target===this) closePaymentModal(); });
 
   setTimeout(autoSnapshotNetWorth, 1000);
+
+  // Do an initial save to confirm sync is working
+  setTimeout(async () => {
+    setSyncStatus('syncing');
+    await saveToSupabase();
+  }, 2000);
+
   renderDashboard();
 }
 
@@ -2239,18 +2273,17 @@ function calcDebtFree(debts) {
 }
 
 // ── MONTHLY CHART DATA HELPER ─────────────────────────────────
-function getMonthlyChartData(numMonths) {
+function getMonthlyChartData() {
   const shortMonths = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
-  const now = new Date();
+  const yp = document.getElementById('yearPicker');
+  const selectedYear = yp ? parseInt(yp.value) : new Date().getFullYear();
   const labels = [], income = [], expenses = [];
 
-  for(let i = numMonths - 1; i >= 0; i--) {
-    const d = new Date(now.getFullYear(), now.getMonth() - i, 1);
-    const mKey = shortMonths[d.getMonth()];
-    const yr = d.getFullYear();
-    labels.push(mKey); // just month name — year shown on dashboard separately
+  for(let m = 0; m < 12; m++) {
+    const mKey = shortMonths[m];
+    labels.push(mKey);
     const entry = data.monthlyHistory.find(h =>
-      h.month === mKey && (h.year === yr || h.year === undefined)
+      h.month === mKey && (h.year === selectedYear || (!h.year && selectedYear === new Date().getFullYear()))
     );
     income.push(entry?.income || 0);
     expenses.push(entry?.expenses || 0);
@@ -2311,7 +2344,7 @@ function renderDashboard() {
   // Income/Expense bar — full 12 months with year labels
   destroyChart('incomeExpenseBar');
   const barCtx = document.getElementById('incomeExpenseBar').getContext('2d');
-  const allMonths12 = getMonthlyChartData(12);
+  const allMonths12 = getMonthlyChartData();
   charts.incomeExpenseBar = new Chart(barCtx, {
     type:'bar',
     data:{
@@ -2372,10 +2405,36 @@ function renderDashboard() {
   // Net worth line
   destroyChart('networthLine');
   const nwCtx = document.getElementById('networthLine').getContext('2d');
+  // Rolling 12 months of net worth history, sorted chronologically
+  const shortMo = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+  const now12 = new Date();
+  const nwData = [];
+  for(let i = 11; i >= 0; i--) {
+    const d = new Date(now12.getFullYear(), now12.getMonth() - i, 1);
+    const mKey = shortMo[d.getMonth()];
+    const yr = d.getFullYear();
+    const entry = data.networthHistory.find(h => h.month === mKey && (h.year === yr || (!h.year && i <= 5)));
+    nwData.push({ label: `${mKey} '${String(yr).slice(2)}`, value: entry?.value || null });
+  }
   charts.networthLine = new Chart(nwCtx,{
     type:'line',
-    data:{labels:data.networthHistory.map(h=>h.month),datasets:[{data:data.networthHistory.map(h=>h.value),borderColor:SAGE,backgroundColor:SAGE+'22',fill:true,tension:0.4,pointRadius:3,pointBackgroundColor:SAGE,borderWidth:2}]},
-    options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}},scales:{x:{grid:{display:false},ticks:{font:{family:'Inter',size:9},color:'#A08060'}},y:{grid:{color:'#EDE5D888'},ticks:{callback:v=>fmt(v),font:{family:'Inter',size:9},color:'#A08060'}}}}
+    data:{
+      labels: nwData.map(d=>d.label),
+      datasets:[{
+        data: nwData.map(d=>d.value),
+        borderColor:SAGE, backgroundColor:SAGE+'22', fill:true,
+        tension:0.4, pointRadius:4, pointBackgroundColor:SAGE,
+        borderWidth:2, spanGaps:true
+      }]
+    },
+    options:{
+      responsive:true, maintainAspectRatio:false,
+      plugins:{legend:{display:false}, tooltip:{callbacks:{label:c=>`Net Worth: ${fmt(c.raw)}`}}},
+      scales:{
+        x:{grid:{display:false},ticks:{font:{family:'Inter',size:9},color:'#A08060',maxRotation:0}},
+        y:{grid:{color:'#EDE5D888'},ticks:{callback:v=>fmt(v),font:{family:'Inter',size:9},color:'#A08060'}}
+      }
+    }
   });
 }
 
@@ -2775,10 +2834,36 @@ function renderNetworth() {
 
   destroyChart('networthChart');
   const ctx = document.getElementById('networthChart').getContext('2d');
+  const shortMoNW = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+  const nowNW = new Date();
+  const nwData12 = [];
+  for(let i = 11; i >= 0; i--) {
+    const d = new Date(nowNW.getFullYear(), nowNW.getMonth() - i, 1);
+    const mKey = shortMoNW[d.getMonth()];
+    const yr = d.getFullYear();
+    const entry = data.networthHistory.find(h => h.month === mKey && (h.year === yr || (!h.year && i <= 5)));
+    nwData12.push({ label: `${mKey} '${String(yr).slice(2)}`, value: entry?.value || null });
+  }
   charts.networthChart = new Chart(ctx,{
     type:'line',
-    data:{labels:data.networthHistory.map(h=>h.month),datasets:[{label:'Net Worth',data:data.networthHistory.map(h=>h.value),borderColor:SAGE,backgroundColor:SAGE+'22',fill:true,tension:0.4,pointRadius:4,pointBackgroundColor:SAGE,borderWidth:2}]},
-    options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}},scales:{x:{grid:{display:false},ticks:{font:{family:'Inter',size:11},color:'#A08060'}},y:{grid:{color:'#EDE5D888'},ticks:{callback:v=>fmt(v),font:{family:'Inter',size:11},color:'#A08060'}}}}
+    data:{
+      labels: nwData12.map(d=>d.label),
+      datasets:[{
+        label:'Net Worth',
+        data: nwData12.map(d=>d.value),
+        borderColor:SAGE, backgroundColor:SAGE+'22', fill:true,
+        tension:0.4, pointRadius:4, pointBackgroundColor:SAGE,
+        borderWidth:2, spanGaps:true
+      }]
+    },
+    options:{
+      responsive:true, maintainAspectRatio:false,
+      plugins:{legend:{display:false}, tooltip:{callbacks:{label:c=>`Net Worth: ${fmt(c.raw)}`}}},
+      scales:{
+        x:{grid:{display:false},ticks:{font:{family:'Inter',size:11},color:'#A08060',maxRotation:0}},
+        y:{grid:{color:'#EDE5D888'},ticks:{callback:v=>fmt(v),font:{family:'Inter',size:11},color:'#A08060'}}
+      }
+    }
   });
 }
 
@@ -2803,7 +2888,7 @@ function addLiability() { data.liabilities.push({name:'New Liability',value:0});
 function renderReports() {
   destroyChart('reportsBar');
   const ctx = document.getElementById('reportsBar').getContext('2d');
-  const allMonths12r = getMonthlyChartData(12);
+  const allMonths12r = getMonthlyChartData();
   charts.reportsBar = new Chart(ctx,{
     type:'bar',
     data:{
@@ -2859,12 +2944,13 @@ function renderReports() {
 let autosaveTimer = null;
 
 function triggerAutosave() {
-  setSyncStatus('syncing');
   clearTimeout(autosaveTimer);
+  // Only show syncing after a short pause to avoid flicker on every keystroke
   autosaveTimer = setTimeout(async ()=>{
+    setSyncStatus('syncing');
     data.name = document.getElementById('userName')?.value || data.name;
     await saveToSupabase();
-  }, 1200);
+  }, 1500);
 }
 
 function saveData() {
