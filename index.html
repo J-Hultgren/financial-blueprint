@@ -1902,26 +1902,48 @@ async function handleAuth() {
   errEl.textContent = '';
 
   if(!email || !password) { errEl.textContent = 'Please enter your email and password.'; return; }
+  if(password.length < 6) { errEl.textContent = 'Password must be at least 6 characters.'; return; }
 
   document.getElementById('auth-loading').style.display = 'block';
   document.getElementById('auth-form').style.display = 'none';
 
-  let result;
-  if(authMode === 'signin') {
-    result = await supa.auth.signInWithPassword({email, password});
+  if(authMode === 'signup') {
+    // Sign up then immediately sign in
+    const { error: signUpError } = await supa.auth.signUp({email, password});
+    if(signUpError && !signUpError.message.includes('already registered')) {
+      document.getElementById('auth-loading').style.display = 'none';
+      document.getElementById('auth-form').style.display = 'block';
+      errEl.textContent = signUpError.message;
+      return;
+    }
+    // Whether new or already existed, sign in
+    const { data: signInData, error: signInError } = await supa.auth.signInWithPassword({email, password});
+    if(signInError) {
+      document.getElementById('auth-loading').style.display = 'none';
+      document.getElementById('auth-form').style.display = 'block';
+      errEl.textContent = signInError.message;
+      return;
+    }
+    currentUser = signInData.user;
+    if(name) await supa.auth.updateUser({data:{name}});
+
   } else {
-    result = await supa.auth.signUp({email, password});
+    // Sign in
+    const { data: signInData, error: signInError } = await supa.auth.signInWithPassword({email, password});
+    if(signInError) {
+      document.getElementById('auth-loading').style.display = 'none';
+      document.getElementById('auth-form').style.display = 'block';
+      // Friendlier error messages
+      if(signInError.message.includes('Invalid login')) {
+        errEl.textContent = 'Email or password is incorrect. If you just created an account, try Sign In instead of Create Account.';
+      } else {
+        errEl.textContent = signInError.message;
+      }
+      return;
+    }
+    currentUser = signInData.user;
   }
 
-  if(result.error) {
-    document.getElementById('auth-loading').style.display = 'none';
-    document.getElementById('auth-form').style.display = 'block';
-    errEl.textContent = result.error.message;
-    return;
-  }
-
-  currentUser = result.data.user;
-  if(name) { await supa.auth.updateUser({data:{name}}); }
   await initAppForUser();
 }
 
@@ -1933,32 +1955,45 @@ async function signOut() {
   document.getElementById('auth-password').value = '';
   document.getElementById('auth-form').style.display = 'block';
   document.getElementById('auth-loading').style.display = 'none';
+  document.getElementById('auth-error').textContent = '';
 }
 
 // ── SUPABASE SYNC ─────────────────────────────────────────────
 async function loadFromSupabase() {
   if(!currentUser) return null;
-  const { data: rows, error } = await supa
-    .from('financial_blueprint')
-    .select('data')
-    .eq('user_id', currentUser.id)
-    .single();
-  if(error || !rows) return null;
-  return rows.data;
+  try {
+    const { data: rows, error } = await supa
+      .from('financial_blueprint')
+      .select('data')
+      .eq('user_id', currentUser.id)
+      .maybeSingle(); // maybeSingle doesn't error if no rows found
+    if(error) { console.error('Load error:', error.message); return null; }
+    return rows?.data || null;
+  } catch(e) { console.error('Load exception:', e); return null; }
 }
 
 async function saveToSupabase() {
   if(!currentUser) return;
   setSyncStatus('syncing');
-  const { error } = await supa
-    .from('financial_blueprint')
-    .upsert({
-      user_id: currentUser.id,
-      data: data,
-      updated_at: new Date().toISOString()
-    }, { onConflict: 'user_id' });
-  if(error) { setSyncStatus('error'); console.error(error); }
-  else setSyncStatus('synced');
+  try {
+    const { error } = await supa
+      .from('financial_blueprint')
+      .upsert({
+        user_id: currentUser.id,
+        data: data,
+        updated_at: new Date().toISOString()
+      }, { onConflict: 'user_id' });
+    if(error) {
+      console.error('Save error:', error.message, error.details, error.hint);
+      setSyncStatus('error');
+      showToast(`Sync error: ${error.message}`, 4000);
+    } else {
+      setSyncStatus('synced');
+    }
+  } catch(e) {
+    console.error('Save exception:', e);
+    setSyncStatus('error');
+  }
 }
 
 function setSyncStatus(status) {
