@@ -1311,6 +1311,9 @@
   </div>
   <nav class="sidebar-nav">
     <div class="nav-section-label">Overview</div>
+    <div class="nav-item" onclick="showPage('starthere', this)">
+      <span class="nav-icon">✦</span> Start Here
+    </div>
     <div class="nav-item active" onclick="showPage('dashboard', this)">
       <span class="nav-icon">⊞</span> Dashboard
     </div>
@@ -1383,6 +1386,154 @@
         <span id="autosave-label">Synced</span>
         <button onclick="signOut()" style="background:none;border:1px solid var(--linen);border-radius:5px;padding:3px 8px;font-size:10px;cursor:pointer;color:var(--light);font-family:'Inter',sans-serif;margin-left:4px">Sign Out</button>
       </div>
+    </div>
+  </div>
+
+  <!-- ══ START HERE ════════════════════════════════════════════ -->
+  <div id="page-starthere" class="page">
+    <div class="section-header">
+      <div class="section-title">Start Here</div>
+      <div class="section-sub">Follow these steps in order. Each one builds on the last. Takes about 20 minutes to set up completely.</div>
+    </div>
+
+    <!-- Progress indicator -->
+    <div style="display:flex;gap:6px;margin-bottom:28px;flex-wrap:wrap" id="setup-progress"></div>
+
+    <!-- Steps -->
+    <div style="display:flex;flex-direction:column;gap:14px">
+
+      <!-- Step 1 -->
+      <div class="card" style="border-left:4px solid var(--rose)">
+        <div style="display:flex;align-items:flex-start;gap:16px">
+          <div style="background:var(--rose);color:white;border-radius:50%;width:32px;height:32px;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:14px;flex-shrink:0">1</div>
+          <div style="flex:1">
+            <div style="font-family:'Cormorant Garamond',serif;font-size:18px;font-style:italic;color:var(--ink);margin-bottom:4px">Enter your name</div>
+            <div style="font-size:12px;color:var(--mid);margin-bottom:10px">Go to Settings → Your Profile → enter your first name → Save Profile.</div>
+            <button onclick="showPage('settings',document.querySelector('[onclick*=settings]'))" style="background:var(--rose-faint);border:1px solid var(--rose-light);border-radius:6px;padding:6px 14px;font-size:12px;font-weight:600;cursor:pointer;color:var(--rose);font-family:'DM Sans',sans-serif">Go to Settings →</button>
+          </div>
+          <input type="checkbox" id="check-1" onchange="updateSetupProgress()" style="width:18px;height:18px;accent-color:var(--rose);flex-shrink:0;margin-top:4px">
+        </div>
+      </div>
+
+      <!-- Step 2 -->
+      <div class="card" style="border-left:4px solid var(--mauve)">
+        <div style="display:flex;align-items:flex-start;gap:16px">
+          <div style="background:var(--mauve);color:white;border-radius:50%;width:32px;height:32px;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:14px;flex-shrink:0">2</div>
+          <div style="flex:1">
+            <div style="font-family:'Cormorant Garamond',serif;font-size:18px;font-style:italic;color:var(--ink);margin-bottom:4px">Enter your debts</div>
+            <div style="font-size:12px;color:var(--mid);margin-bottom:8px">Go to <strong>Debt Payoff</strong> and enter every debt you have. For each one you need:</div>
+            <ul style="font-size:12px;color:var(--mid);margin-left:16px;margin-bottom:10px;line-height:2">
+              <li>Debt name (e.g. "Barclay Credit Card")</li>
+              <li>Current balance owed</li>
+              <li>Interest rate (APR) — find it on your statement</li>
+              <li>Minimum monthly payment</li>
+            </ul>
+            <div style="font-size:11px;background:var(--lav-faint);border-radius:6px;padding:8px 12px;color:var(--lavender);margin-bottom:10px">💡 <strong>Tip:</strong> Enter debts in avalanche order — highest APR first. This saves the most money in interest. Your order: Avant → Barclay → Amex → SoFi.</div>
+            <button onclick="showPage('debt',document.querySelector('[onclick*=debt]'))" style="background:var(--mauve-faint);border:1px solid var(--mauve-light);border-radius:6px;padding:6px 14px;font-size:12px;font-weight:600;cursor:pointer;color:var(--mauve);font-family:'DM Sans',sans-serif">Go to Debt Payoff →</button>
+          </div>
+          <input type="checkbox" id="check-2" onchange="updateSetupProgress()" style="width:18px;height:18px;accent-color:var(--mauve);flex-shrink:0;margin-top:4px">
+        </div>
+      </div>
+
+      <!-- Step 3 -->
+      <div class="card" style="border-left:4px solid var(--lavender)">
+        <div style="display:flex;align-items:flex-start;gap:16px">
+          <div style="background:var(--lavender);color:white;border-radius:50%;width:32px;height:32px;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:14px;flex-shrink:0">3</div>
+          <div style="flex:1">
+            <div style="font-family:'Cormorant Garamond',serif;font-size:18px;font-style:italic;color:var(--ink);margin-bottom:4px">Set up your recurring bills</div>
+            <div style="font-size:12px;color:var(--mid);margin-bottom:8px">Go to <strong>Bills</strong> and enter all recurring monthly bills. This includes:</div>
+            <ul style="font-size:12px;color:var(--mid);margin-left:16px;margin-bottom:10px;line-height:2">
+              <li>Mortgage / rent</li>
+              <li>Utilities (electric, gas, water, internet)</li>
+              <li>Insurance (car, health)</li>
+              <li>Subscriptions (streaming, apps, gym)</li>
+              <li>Car payment</li>
+              <li>Debt minimum payments</li>
+            </ul>
+            <div style="font-size:11px;background:var(--lav-faint);border-radius:6px;padding:8px 12px;color:var(--lavender);margin-bottom:10px">💡 <strong>Tip:</strong> Mark everything you can as Auto-Pay = Yes. One missed payment drops your credit score 60-100 points.</div>
+            <button onclick="showPage('bills',document.querySelector('[onclick*=bills]'))" style="background:var(--lav-faint);border:1px solid var(--lavender);border-radius:6px;padding:6px 14px;font-size:12px;font-weight:600;cursor:pointer;color:var(--lavender);font-family:'DM Sans',sans-serif">Go to Bills →</button>
+          </div>
+          <input type="checkbox" id="check-3" onchange="updateSetupProgress()" style="width:18px;height:18px;accent-color:var(--lavender);flex-shrink:0;margin-top:4px">
+        </div>
+      </div>
+
+      <!-- Step 4 -->
+      <div class="card" style="border-left:4px solid var(--sage)">
+        <div style="display:flex;align-items:flex-start;gap:16px">
+          <div style="background:var(--sage);color:white;border-radius:50%;width:32px;height:32px;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:14px;flex-shrink:0">4</div>
+          <div style="flex:1">
+            <div style="font-family:'Cormorant Garamond',serif;font-size:18px;font-style:italic;color:var(--ink);margin-bottom:4px">Enter this month's budget</div>
+            <div style="font-size:12px;color:var(--mid);margin-bottom:8px">Go to <strong>Budget</strong>. Use the Quick-Set buttons at the top to pre-fill your income based on how many paychecks you're getting this month, then:</div>
+            <ul style="font-size:12px;color:var(--mid);margin-left:16px;margin-bottom:10px;line-height:2">
+              <li>Confirm the income amounts are correct for <em>this specific month</em></li>
+              <li>Enter your planned spending for each expense category</li>
+              <li>As the month progresses, fill in the Actual column</li>
+              <li>At month end, hit "Save Month" to record it to history</li>
+            </ul>
+            <div style="font-size:11px;background:var(--sage-faint);border-radius:6px;padding:8px 12px;color:var(--sage);margin-bottom:10px">💡 <strong>Your income patterns:</strong> 4-TP month = $18,900 · 5-TP month = $21,405 · 5-TP + XE 3rd check = $23,340. Each month you navigate to that month and enter its specific income.</div>
+            <button onclick="showPage('budget',document.querySelector('[onclick*=budget]'))" style="background:var(--sage-faint);border:1px solid var(--sage-light);border-radius:6px;padding:6px 14px;font-size:12px;font-weight:600;cursor:pointer;color:var(--sage);font-family:'DM Sans',sans-serif">Go to Budget →</button>
+          </div>
+          <input type="checkbox" id="check-4" onchange="updateSetupProgress()" style="width:18px;height:18px;accent-color:var(--sage);flex-shrink:0;margin-top:4px">
+        </div>
+      </div>
+
+      <!-- Step 5 -->
+      <div class="card" style="border-left:4px solid var(--rose-light)">
+        <div style="display:flex;align-items:flex-start;gap:16px">
+          <div style="background:var(--rose-light);color:white;border-radius:50%;width:32px;height:32px;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:14px;flex-shrink:0">5</div>
+          <div style="flex:1">
+            <div style="font-family:'Cormorant Garamond',serif;font-size:18px;font-style:italic;color:var(--ink);margin-bottom:4px">Enter your assets & liabilities</div>
+            <div style="font-size:12px;color:var(--mid);margin-bottom:8px">Go to <strong>Net Worth</strong> and enter what you own and what you owe. You need:</div>
+            <ul style="font-size:12px;color:var(--mid);margin-left:16px;margin-bottom:10px;line-height:2">
+              <li><strong>Assets:</strong> Home value, car values, checking/savings balances, 401(k)/IRA balances, investment accounts</li>
+              <li><strong>Liabilities:</strong> Mortgage balance, car loans, all the debts from Step 2, student loans</li>
+            </ul>
+            <div style="font-size:11px;background:var(--rose-faint);border-radius:6px;padding:8px 12px;color:var(--rose);margin-bottom:10px">💡 <strong>Tip:</strong> Use Zillow for your home estimate. Check each account online for current balances. Round to the nearest hundred is fine.</div>
+            <button onclick="showPage('networth',document.querySelector('[onclick*=networth]'))" style="background:var(--rose-faint);border:1px solid var(--rose-light);border-radius:6px;padding:6px 14px;font-size:12px;font-weight:600;cursor:pointer;color:var(--rose);font-family:'DM Sans',sans-serif">Go to Net Worth →</button>
+          </div>
+          <input type="checkbox" id="check-5" onchange="updateSetupProgress()" style="width:18px;height:18px;accent-color:var(--rose-light);flex-shrink:0;margin-top:4px">
+        </div>
+      </div>
+
+      <!-- Step 6 -->
+      <div class="card" style="border-left:4px solid var(--mauve)">
+        <div style="display:flex;align-items:flex-start;gap:16px">
+          <div style="background:var(--mauve);color:white;border-radius:50%;width:32px;height:32px;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:14px;flex-shrink:0">6</div>
+          <div style="flex:1">
+            <div style="font-family:'Cormorant Garamond',serif;font-size:18px;font-style:italic;color:var(--ink);margin-bottom:4px">Set your savings goals</div>
+            <div style="font-size:12px;color:var(--mid);margin-bottom:8px">Go to <strong>Goals</strong> and set 1–3 targets. Examples:</div>
+            <ul style="font-size:12px;color:var(--mid);margin-left:16px;margin-bottom:10px;line-height:2">
+              <li>Emergency Fund — target $15,000 (3 months of expenses)</li>
+              <li>Home Renovation — target $50,000</li>
+              <li>Debt-Free Date — use the What-If calculator to set a payoff date goal</li>
+            </ul>
+            <button onclick="showPage('goals',document.querySelector('[onclick*=goals]'))" style="background:var(--mauve-faint);border:1px solid var(--mauve-light);border-radius:6px;padding:6px 14px;font-size:12px;font-weight:600;cursor:pointer;color:var(--mauve);font-family:'DM Sans',sans-serif">Go to Goals →</button>
+          </div>
+          <input type="checkbox" id="check-6" onchange="updateSetupProgress()" style="width:18px;height:18px;accent-color:var(--mauve);flex-shrink:0;margin-top:4px">
+        </div>
+      </div>
+
+      <!-- Step 7 -->
+      <div class="card" style="border-left:4px solid var(--lavender)">
+        <div style="display:flex;align-items:flex-start;gap:16px">
+          <div style="background:var(--lavender);color:white;border-radius:50%;width:32px;height:32px;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:14px;flex-shrink:0">7</div>
+          <div style="flex:1">
+            <div style="font-family:'Cormorant Garamond',serif;font-size:18px;font-style:italic;color:var(--ink);margin-bottom:4px">Check your Dashboard</div>
+            <div style="font-size:12px;color:var(--mid);margin-bottom:8px">Go to <strong>Dashboard</strong>. Everything from steps 1–6 should now be reflected. You'll see your total debt, monthly cashflow, net worth, and savings goals all in one place.</div>
+            <div style="font-size:11px;background:var(--lav-faint);border-radius:6px;padding:8px 12px;color:var(--lavender);margin-bottom:10px">💡 <strong>After setup, your weekly routine:</strong> Log expenses in the Expenses tab as they happen. At month end, fill in Budget actuals → hit Save Month → log any debt payments → done.</div>
+            <button onclick="showPage('dashboard',document.querySelector('[onclick*=dashboard]'))" style="background:var(--lav-faint);border:1px solid var(--lavender);border-radius:6px;padding:6px 14px;font-size:12px;font-weight:600;cursor:pointer;color:var(--lavender);font-family:'DM Sans',sans-serif">Go to Dashboard →</button>
+          </div>
+          <input type="checkbox" id="check-7" onchange="updateSetupProgress()" style="width:18px;height:18px;accent-color:var(--lavender);flex-shrink:0;margin-top:4px">
+        </div>
+      </div>
+
+      <!-- Completion message -->
+      <div id="setup-complete" style="display:none;background:linear-gradient(135deg,var(--rose-faint),var(--lav-faint));border:1px solid var(--rose-light);border-radius:12px;padding:24px;text-align:center">
+        <div style="font-size:32px;margin-bottom:8px">🎉</div>
+        <div style="font-family:'Cormorant Garamond',serif;font-size:22px;font-style:italic;color:var(--ink);margin-bottom:6px">Setup complete!</div>
+        <div style="font-size:13px;color:var(--mid)">Your Financial Blueprint is ready. Head to the Dashboard to see your full financial picture.</div>
+      </div>
+
     </div>
   </div>
 
@@ -1491,31 +1642,50 @@
   <div id="page-budget" class="page">
     <div class="section-header">
       <div class="section-title">Monthly Budget</div>
-      <div class="section-sub">Plan your income and expenses. Update actuals as the month progresses.</div>
+      <div class="section-sub">Each month is its own snapshot — income and expenses are saved per month so varying paychecks are tracked accurately.</div>
     </div>
 
-    <div class="kpi-grid" style="grid-template-columns:repeat(4,1fr)">
+    <!-- Month navigator -->
+    <div style="display:flex;align-items:center;gap:12px;margin-bottom:20px;flex-wrap:wrap">
+      <button onclick="budgetShiftMonth(-1)" style="background:var(--linen);border:1px solid var(--parchment);border-radius:8px;padding:8px 14px;cursor:pointer;font-size:16px;color:var(--ink)">‹</button>
+      <div style="font-family:'Cormorant Garamond',serif;font-size:22px;font-style:italic;color:var(--ink)" id="budget-month-display">June 2026</div>
+      <button onclick="budgetShiftMonth(1)" style="background:var(--linen);border:1px solid var(--parchment);border-radius:8px;padding:8px 14px;cursor:pointer;font-size:16px;color:var(--ink)">›</button>
+      <div id="budget-month-tag" style="font-size:11px;padding:4px 10px;background:var(--lav-faint);color:var(--lavender);border-radius:99px;font-weight:600;display:none">No data yet — enter this month's budget below</div>
+    </div>
+
+    <!-- Income type quick-set for Jessa's paycheck variability -->
+    <div style="background:var(--rose-faint);border:1px solid var(--rose-light);border-radius:10px;padding:14px 18px;margin-bottom:20px">
+      <div style="font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:.06em;color:var(--rose);margin-bottom:10px">⚡ Quick-Set Income — tap to pre-fill based on this month's paychecks</div>
+      <div style="display:flex;gap:8px;flex-wrap:wrap">
+        <button onclick="quickSetIncome('4tp')" style="background:white;border:1px solid var(--rose-light);border-radius:6px;padding:7px 14px;font-size:12px;font-weight:600;cursor:pointer;color:var(--ink);font-family:'DM Sans',sans-serif">4-TP month — $18,900</button>
+        <button onclick="quickSetIncome('5tp')" style="background:white;border:1px solid var(--rose-light);border-radius:6px;padding:7px 14px;font-size:12px;font-weight:600;cursor:pointer;color:var(--ink);font-family:'DM Sans',sans-serif">5-TP month — $21,405</button>
+        <button onclick="quickSetIncome('5both')" style="background:white;border:1px solid var(--rose-light);border-radius:6px;padding:7px 14px;font-size:12px;font-weight:600;cursor:pointer;color:var(--ink);font-family:'DM Sans',sans-serif">5-TP + XE extra — $23,340</button>
+        <button onclick="quickSetIncome('custom')" style="background:var(--lav-faint);border:1px solid var(--lavender);border-radius:6px;padding:7px 14px;font-size:12px;font-weight:600;cursor:pointer;color:var(--lavender);font-family:'DM Sans',sans-serif">Enter manually</button>
+      </div>
+    </div>
+
+    <div class="kpi-grid" style="grid-template-columns:repeat(4,1fr);margin-bottom:20px">
       <div class="kpi-card sage">
         <div class="kpi-label">Total Income</div>
-        <div class="kpi-value positive" id="b-income">$6,250</div>
+        <div class="kpi-value positive" id="b-income">$0</div>
       </div>
       <div class="kpi-card terra">
         <div class="kpi-label">Total Expenses</div>
-        <div class="kpi-value" id="b-expenses">$3,980</div>
+        <div class="kpi-value" id="b-expenses">$0</div>
       </div>
       <div class="kpi-card sage">
         <div class="kpi-label">Cashflow</div>
-        <div class="kpi-value positive" id="b-cashflow">$2,270</div>
+        <div class="kpi-value positive" id="b-cashflow">$0</div>
       </div>
       <div class="kpi-card brown">
         <div class="kpi-label">Savings Rate</div>
-        <div class="kpi-value positive" id="b-rate">36%</div>
+        <div class="kpi-value positive" id="b-rate">—</div>
       </div>
     </div>
 
     <div class="two-col">
       <div class="card">
-        <div class="card-title">Income</div>
+        <div class="card-title">Income <span style="font-size:10px;color:var(--light);font-weight:400;text-transform:none;letter-spacing:0">— enters actual paychecks received this month</span></div>
         <table class="data-table" id="income-table">
           <thead><tr>
             <th>Source</th><th style="text-align:right">Planned</th><th style="text-align:right">Actual</th><th style="text-align:right">Difference</th>
@@ -1532,7 +1702,7 @@
       </div>
 
       <div class="card">
-        <div class="card-title">Expenses</div>
+        <div class="card-title">Expenses <span style="font-size:10px;color:var(--light);font-weight:400;text-transform:none;letter-spacing:0">— planned vs what you actually spent</span></div>
         <table class="data-table" id="expense-table">
           <thead><tr>
             <th>Category</th><th style="text-align:right">Planned</th><th style="text-align:right">Actual</th><th style="text-align:right">Difference</th>
@@ -1547,6 +1717,15 @@
         </table>
         <button class="add-row-btn" onclick="addExpenseRow()">+ Add expense</button>
       </div>
+    </div>
+
+    <!-- Save this month -->
+    <div style="margin-top:20px;padding:16px 20px;background:var(--lav-faint);border:1px solid var(--lavender);border-radius:10px;display:flex;align-items:center;justify-content:space-between;gap:16px;flex-wrap:wrap">
+      <div>
+        <div style="font-weight:600;font-size:14px;color:var(--ink)">Save this month's budget</div>
+        <div style="font-size:12px;color:var(--mid);margin-top:2px">This records the month to your history and updates the dashboard charts.</div>
+      </div>
+      <button onclick="saveCurrentMonthBudget()" style="background:var(--lavender);color:white;border:none;border-radius:8px;padding:10px 24px;font-family:'DM Sans',sans-serif;font-size:13px;font-weight:600;cursor:pointer;white-space:nowrap">Save Month →</button>
     </div>
   </div>
 
@@ -2170,6 +2349,9 @@ async function initAppForUser() {
 
   setTimeout(autoSnapshotNetWorth, 1000);
 
+  // Restore setup checklist state
+  setTimeout(restoreSetupChecks, 500);
+
   // Do an initial save to confirm sync is working
   setTimeout(async () => {
     setSyncStatus('syncing');
@@ -2192,6 +2374,7 @@ function ensureDataFields() {
   if(!data.networthHistory) data.networthHistory = _def.networthHistory;
   if(!data.monthlyHistory) data.monthlyHistory = _def.monthlyHistory;
   if(!data.spendingAlerts) data.spendingAlerts = {};
+  if(!data.monthlyBudgets) data.monthlyBudgets = {};
   if(!data.paymentMethods) data.paymentMethods = ['Debit','Credit Card','Cash','Venmo','PayPal','Other'];
   if(!data.expenseCats) data.expenseCats = ['Groceries','Dining Out','Transportation','Personal Care','Entertainment','Subscriptions','Clothing','Medical','Household','Gifts','Other'];
 }
@@ -2316,6 +2499,7 @@ function renderPage(id) {
   if(id==='whatif') renderWhatIf();
   if(id==='billcal') renderBillCalendar();
   if(id==='settings') renderAlertSettings();
+  if(id==='starthere') {} // static page, no render needed
 }
 
 // ── UTILS ──────────────────────────────────────────────────────
@@ -2356,7 +2540,43 @@ function calcDebtFree(debts) {
   return d.toLocaleDateString('en-US',{month:'short',year:'numeric'});
 }
 
-// ── MONTHLY CHART DATA HELPER ─────────────────────────────────
+// ── SETUP PROGRESS ───────────────────────────────────────────
+function updateSetupProgress() {
+  const total = 7;
+  let done = 0;
+  for(let i=1;i<=total;i++) {
+    const cb = document.getElementById(`check-${i}`);
+    if(cb && cb.checked) done++;
+  }
+  const prog = document.getElementById('setup-progress');
+  if(prog) {
+    prog.innerHTML = Array.from({length:total},(_, i)=>{
+      const cb = document.getElementById(`check-${i+1}`);
+      const checked = cb && cb.checked;
+      return `<div style="width:32px;height:6px;border-radius:99px;background:${checked?'var(--rose)':'var(--linen)'}"></div>`;
+    }).join('') + `<span style="font-size:12px;color:var(--mid);margin-left:8px">${done} of ${total} complete</span>`;
+  }
+  const complete = document.getElementById('setup-complete');
+  if(complete) complete.style.display = done===total ? 'block' : 'none';
+  // Persist checkbox states
+  if(!data.setupChecks) data.setupChecks = {};
+  for(let i=1;i<=total;i++) {
+    const cb = document.getElementById(`check-${i}`);
+    if(cb) data.setupChecks[i] = cb.checked;
+  }
+  triggerAutosave();
+}
+
+function restoreSetupChecks() {
+  if(!data.setupChecks) return;
+  for(let i=1;i<=7;i++) {
+    const cb = document.getElementById(`check-${i}`);
+    if(cb && data.setupChecks[i]) cb.checked = true;
+  }
+  updateSetupProgress();
+}
+
+
 function getMonthlyChartData() {
   const shortMonths = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
   const yp = document.getElementById('yearPicker');
@@ -2523,28 +2743,122 @@ function renderDashboard() {
 }
 
 // ── BUDGET ────────────────────────────────────────────────────
+// ── BUDGET — PER-MONTH STATIC ─────────────────────────────────
+// Budget state: each month is keyed as "YYYY-MM"
+// data.monthlyBudgets = { "2026-06": { income:[...], expenses:[...] }, ... }
+
+let budgetYear = new Date().getFullYear();
+let budgetMonth = new Date().getMonth(); // 0-indexed
+
+const MONTHS_FULL = ['January','February','March','April','May','June','July','August','September','October','November','December'];
+const MONTHS_SHORT = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+
+function budgetKey(y, m) {
+  return `${y}-${String(m+1).padStart(2,'0')}`;
+}
+
+function getBudgetForMonth(y, m) {
+  const key = budgetKey(y, m);
+  if(!data.monthlyBudgets) data.monthlyBudgets = {};
+  if(!data.monthlyBudgets[key]) {
+    // New month — copy structure from template or default
+    data.monthlyBudgets[key] = {
+      income: JSON.parse(JSON.stringify(data.income)),
+      expenses: JSON.parse(JSON.stringify(data.expenses))
+    };
+  }
+  return data.monthlyBudgets[key];
+}
+
+function budgetShiftMonth(dir) {
+  budgetMonth += dir;
+  if(budgetMonth > 11) { budgetMonth = 0; budgetYear++; }
+  if(budgetMonth < 0) { budgetMonth = 11; budgetYear--; }
+  renderBudget();
+}
+
+function quickSetIncome(type) {
+  const key = budgetKey(budgetYear, budgetMonth);
+  if(!data.monthlyBudgets) data.monthlyBudgets = {};
+  const mb = getBudgetForMonth(budgetYear, budgetMonth);
+
+  const presets = {
+    '4tp': [
+      {source:'TerraPower — LC (4 paychecks)', planned:8320, actual:8320},
+      {source:'TerraPower — SCU (4 paychecks)', planned:1700, actual:1700},  // removed if not applicable
+      {source:'X-Energy (semi-monthly)', planned:8880, actual:8880},
+    ],
+    '5tp': [
+      {source:'TerraPower — LC (5 paychecks)', planned:10400, actual:10400},
+      {source:'TerraPower — SCU (5 paychecks)', planned:2125, actual:2125},
+      {source:'X-Energy (semi-monthly)', planned:8880, actual:8880},
+    ],
+    '5both': [
+      {source:'TerraPower — LC (5 paychecks)', planned:10400, actual:10400},
+      {source:'TerraPower — SCU (5 paychecks)', planned:2125, actual:2125},
+      {source:'X-Energy (semi-monthly × 3)', planned:10815, actual:10815},
+    ],
+  };
+
+  if(type === 'custom') {
+    if(!mb.income.length) mb.income = [{source:'TerraPower', planned:0, actual:0},{source:'X-Energy', planned:0, actual:0}];
+  } else {
+    mb.income = presets[type];
+  }
+  data.monthlyBudgets[key] = mb;
+  renderBudget();
+  triggerAutosave();
+}
+
+function saveCurrentMonthBudget() {
+  const mb = getBudgetForMonth(budgetYear, budgetMonth);
+  const ia = mb.income.reduce((a,r)=>a+r.actual,0);
+  const ea = mb.expenses.reduce((a,r)=>a+r.actual,0);
+  const monthKey = MONTHS_SHORT[budgetMonth];
+
+  // Update monthly history
+  if(!data.monthlyHistory) data.monthlyHistory = [];
+  const existing = data.monthlyHistory.find(h=>h.month===monthKey && h.year===budgetYear);
+  if(existing) { existing.income=ia; existing.expenses=ea; existing.year=budgetYear; }
+  else data.monthlyHistory.push({month:monthKey, year:budgetYear, income:ia, expenses:ea});
+
+  triggerAutosave();
+  showToast(`✓ ${MONTHS_FULL[budgetMonth]} ${budgetYear} saved to history`);
+}
+
 function renderBudget() {
+  const mb = getBudgetForMonth(budgetYear, budgetMonth);
+
+  // Update month display
+  document.getElementById('budget-month-display').textContent = `${MONTHS_FULL[budgetMonth]} ${budgetYear}`;
+
+  // Check if this month has existing data
+  const key = budgetKey(budgetYear, budgetMonth);
+  const hasData = data.monthlyBudgets?.[key] !== undefined;
+  const tag = document.getElementById('budget-month-tag');
+  if(tag) tag.style.display = hasData ? 'none' : 'inline-block';
+
   const ib = document.getElementById('income-body');
-  ib.innerHTML = data.income.map((r,i)=>`<tr>
-    <td><input class="editable" value="${r.source}" onchange="data.income[${i}].source=this.value"></td>
-    <td>${curInput(r.planned, `data.income[${i}].planned=raw;calcBudget()`)}</td>
-    <td>${curInput(r.actual, `data.income[${i}].actual=raw;calcBudget()`)}</td>
+  ib.innerHTML = mb.income.map((r,i)=>`<tr>
+    <td><input class="editable" value="${r.source}" onchange="getBudgetForMonth(${budgetYear},${budgetMonth}).income[${i}].source=this.value;triggerAutosave()"></td>
+    <td>${curInput(r.planned, `getBudgetForMonth(${budgetYear},${budgetMonth}).income[${i}].planned=raw;calcBudget()`)}</td>
+    <td>${curInput(r.actual, `getBudgetForMonth(${budgetYear},${budgetMonth}).income[${i}].actual=raw;calcBudget()`)}</td>
     <td style="text-align:right;color:${r.actual-r.planned>=0?'var(--sage)':'var(--rose)'}">${fmt(r.actual-r.planned)}</td>
   </tr>`).join('');
 
   const eb = document.getElementById('expense-body');
-  eb.innerHTML = data.expenses.map((r,i)=>{
+  eb.innerHTML = mb.expenses.map((r,i)=>{
     const alert = getAlertStatus(r.cat, r.actual);
     const alertHtml = alert ? `
       <div class="alert-bar"><div class="alert-fill ${alert.status}" style="width:${Math.round(alert.pct*100)}%"></div></div>
       <span class="alert-badge ${alert.status}">${alert.label}</span>` : '';
     return `<tr>
       <td>
-        <input class="editable" value="${r.cat}" onchange="data.expenses[${i}].cat=this.value">
+        <input class="editable" value="${r.cat}" onchange="getBudgetForMonth(${budgetYear},${budgetMonth}).expenses[${i}].cat=this.value">
         ${alertHtml}
       </td>
-      <td>${curInput(r.planned, `data.expenses[${i}].planned=raw;calcBudget()`)}</td>
-      <td>${curInput(r.actual, `data.expenses[${i}].actual=raw;calcBudget()`)}</td>
+      <td>${curInput(r.planned, `getBudgetForMonth(${budgetYear},${budgetMonth}).expenses[${i}].planned=raw;calcBudget()`)}</td>
+      <td>${curInput(r.actual, `getBudgetForMonth(${budgetYear},${budgetMonth}).expenses[${i}].actual=raw;calcBudget()`)}</td>
       <td style="text-align:right;color:${r.planned-r.actual>=0?'var(--sage)':'var(--rose)'}">${fmt(r.planned-r.actual)}</td>
     </tr>`;
   }).join('');
@@ -2553,10 +2867,11 @@ function renderBudget() {
 }
 
 function calcBudget() {
-  const ip = data.income.reduce((a,r)=>a+r.planned,0);
-  const ia = data.income.reduce((a,r)=>a+r.actual,0);
-  const ep = data.expenses.reduce((a,r)=>a+r.planned,0);
-  const ea = data.expenses.reduce((a,r)=>a+r.actual,0);
+  const mb = getBudgetForMonth(budgetYear, budgetMonth);
+  const ip = mb.income.reduce((a,r)=>a+r.planned,0);
+  const ia = mb.income.reduce((a,r)=>a+r.actual,0);
+  const ep = mb.expenses.reduce((a,r)=>a+r.planned,0);
+  const ea = mb.expenses.reduce((a,r)=>a+r.actual,0);
   document.getElementById('income-planned-total').textContent = fmt(ip);
   document.getElementById('income-actual-total').textContent = fmt(ia);
   document.getElementById('income-diff-total').textContent = fmt(ia-ip);
@@ -2566,19 +2881,26 @@ function calcBudget() {
   document.getElementById('b-income').textContent = fmt(ia);
   document.getElementById('b-expenses').textContent = fmt(ea);
   document.getElementById('b-cashflow').textContent = fmt(ia-ea);
-  document.getElementById('b-rate').textContent = ia>0 ? Math.round((ia-ea)/ia*100)+'%' : '0%';
+  document.getElementById('b-rate').textContent = ia>0 ? Math.round((ia-ea)/ia*100)+'%' : '—';
+
+  // Also sync dashboard budget refs to current month
+  data.income = mb.income;
+  data.expenses = mb.expenses;
   triggerAutosave();
 }
 
 function addIncomeRow() {
-  data.income.push({source:'New Source', planned:0, actual:0});
+  const mb = getBudgetForMonth(budgetYear, budgetMonth);
+  mb.income.push({source:'New Source', planned:0, actual:0});
   renderBudget();
 }
 
 function addExpenseRow() {
-  data.expenses.push({cat:'New Category', planned:0, actual:0});
+  const mb = getBudgetForMonth(budgetYear, budgetMonth);
+  mb.expenses.push({cat:'New Category', planned:0, actual:0});
   renderBudget();
 }
+
 
 // ── EXPENSES ─────────────────────────────────────────────────
 const DEFAULT_CATS = ['Groceries','Dining Out','Transportation','Personal Care','Entertainment','Subscriptions','Clothing','Medical','Household','Gifts','Other'];
@@ -3602,6 +3924,7 @@ function checkDebtMilestones() {
 // Patch pageTitles
 pageTitles.whatif = 'What-If Calculator';
 pageTitles.billcal = 'Bill Calendar';
+pageTitles.starthere = 'Start Here';
 
 // ── PWA INSTALL ───────────────────────────────────────────────
 let deferredInstallPrompt = null;
