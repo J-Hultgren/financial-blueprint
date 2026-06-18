@@ -1295,6 +1295,13 @@
   <!-- ══ DASHBOARD ══════════════════════════════════════════════ -->
   <div id="page-dashboard" class="page active">
 
+    <!-- Year indicator -->
+    <div style="display:flex;align-items:center;gap:10px;margin-bottom:16px">
+      <div style="font-family:'Playfair Display',serif;font-size:28px;color:var(--espresso);line-height:1" id="dash-year-display">2026</div>
+      <div style="width:1px;height:28px;background:var(--parchment)"></div>
+      <div style="font-size:13px;color:var(--brown-light)">Financial Overview</div>
+    </div>
+
     <div class="review-bar">
       <div class="review-text">
         <strong id="dash-month-label">Loading…</strong> — You've spent <strong id="dash-spent">$0</strong> so far this month and have <strong id="dash-remaining">$0</strong> remaining in your budget.
@@ -1979,7 +1986,7 @@ async function saveToSupabase() {
     const { error } = await supa
       .from('financial_blueprint')
       .upsert({
-        user_id: currentUser.id,
+        user_id: currentUser.id,  // uuid — no ::text cast needed
         data: data,
         updated_at: new Date().toISOString()
       }, { onConflict: 'user_id' });
@@ -2030,12 +2037,12 @@ async function initAppForUser() {
     if(toggle) { toggle.checked = true; toggleDarkMode(true); }
   }
 
-  // Populate month picker
+  // Populate month picker — current year through 20 years out
   const now = new Date();
   const currentYear = now.getFullYear();
   const yp = document.getElementById('yearPicker');
   if(yp && yp.children.length === 0) {
-    for(let y = currentYear - 2; y <= currentYear + 5; y++) {
+    for(let y = currentYear; y <= currentYear + 20; y++) {
       const opt = document.createElement('option');
       opt.value = y; opt.textContent = y;
       if(y === currentYear) opt.selected = true;
@@ -2231,11 +2238,36 @@ function calcDebtFree(debts) {
   return d.toLocaleDateString('en-US',{month:'short',year:'numeric'});
 }
 
+// ── MONTHLY CHART DATA HELPER ─────────────────────────────────
+function getMonthlyChartData(numMonths) {
+  const shortMonths = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+  const now = new Date();
+  const labels = [], income = [], expenses = [];
+
+  for(let i = numMonths - 1; i >= 0; i--) {
+    const d = new Date(now.getFullYear(), now.getMonth() - i, 1);
+    const mKey = shortMonths[d.getMonth()];
+    const yr = d.getFullYear();
+    labels.push(mKey); // just month name — year shown on dashboard separately
+    const entry = data.monthlyHistory.find(h =>
+      h.month === mKey && (h.year === yr || h.year === undefined)
+    );
+    income.push(entry?.income || 0);
+    expenses.push(entry?.expenses || 0);
+  }
+  return { labels, income, expenses };
+}
+
 // ── DASHBOARD ─────────────────────────────────────────────────
 function renderDashboard() {
   const selectedMonth = getSelectedMonthLabel();
   const monthLabel = document.getElementById('dash-month-label');
   if(monthLabel) monthLabel.textContent = selectedMonth + ' —';
+
+  // Update year display
+  const yp = document.getElementById('yearPicker');
+  const yearDisplay = document.getElementById('dash-year-display');
+  if(yearDisplay && yp) yearDisplay.textContent = yp.value || new Date().getFullYear();
 
   const totalIncome = data.income.reduce((a,r)=>a+r.planned,0);
   const totalExpenses = data.expenses.reduce((a,r)=>a+r.planned,0);
@@ -2276,19 +2308,20 @@ function renderDashboard() {
     options:{responsive:true,maintainAspectRatio:true,cutout:'68%',plugins:{legend:{display:false},tooltip:{callbacks:{label:c=>`${c.label}: ${fmt(c.raw)}`}}}}
   });
 
-  // Income/Expense bar
+  // Income/Expense bar — full 12 months with year labels
   destroyChart('incomeExpenseBar');
   const barCtx = document.getElementById('incomeExpenseBar').getContext('2d');
+  const allMonths12 = getMonthlyChartData(12);
   charts.incomeExpenseBar = new Chart(barCtx, {
     type:'bar',
     data:{
-      labels: data.monthlyHistory.map(m=>m.month),
+      labels: allMonths12.labels,
       datasets:[
-        {label:'Income', data:data.monthlyHistory.map(m=>m.income), backgroundColor:SAGE+'CC', borderRadius:4},
-        {label:'Expenses', data:data.monthlyHistory.map(m=>m.expenses), backgroundColor:TERRA+'99', borderRadius:4},
+        {label:'Income', data:allMonths12.income, backgroundColor:SAGE+'CC', borderRadius:4},
+        {label:'Expenses', data:allMonths12.expenses, backgroundColor:TERRA+'99', borderRadius:4},
       ]
     },
-    options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{labels:{font:{family:'Inter'},color:ESPRESSO,boxWidth:10,padding:12}}},scales:{x:{grid:{display:false},ticks:{font:{family:'Inter',size:10},color:'#A08060'}},y:{grid:{color:'#EDE5D888'},ticks:{callback:v=>fmt(v),font:{family:'Inter',size:10},color:'#A08060'}}}}
+    options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{labels:{font:{family:'Inter'},color:ESPRESSO,boxWidth:10,padding:12}}},scales:{x:{grid:{display:false},ticks:{font:{family:'Inter',size:10},color:'#A08060',maxRotation:0}},y:{grid:{color:'#EDE5D888'},ticks:{callback:v=>fmt(v),font:{family:'Inter',size:10},color:'#A08060'}}}}
   });
 
   // Bills preview
@@ -2770,17 +2803,18 @@ function addLiability() { data.liabilities.push({name:'New Liability',value:0});
 function renderReports() {
   destroyChart('reportsBar');
   const ctx = document.getElementById('reportsBar').getContext('2d');
+  const allMonths12r = getMonthlyChartData(12);
   charts.reportsBar = new Chart(ctx,{
     type:'bar',
     data:{
-      labels:data.monthlyHistory.map(m=>m.month),
+      labels: allMonths12r.labels,
       datasets:[
-        {label:'Income',data:data.monthlyHistory.map(m=>m.income),backgroundColor:SAGE+'CC',borderRadius:5},
-        {label:'Expenses',data:data.monthlyHistory.map(m=>m.expenses),backgroundColor:TERRA+'99',borderRadius:5},
-        {label:'Savings',data:data.monthlyHistory.map(m=>m.income-m.expenses),backgroundColor:TAN+'CC',borderRadius:5},
+        {label:'Income',data:allMonths12r.income,backgroundColor:SAGE+'CC',borderRadius:5},
+        {label:'Expenses',data:allMonths12r.expenses,backgroundColor:TERRA+'99',borderRadius:5},
+        {label:'Savings',data:allMonths12r.income.map((v,i)=>v-allMonths12r.expenses[i]),backgroundColor:TAN+'CC',borderRadius:5},
       ]
     },
-    options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{labels:{font:{family:'Inter'},color:ESPRESSO,boxWidth:10}}},scales:{x:{grid:{display:false},ticks:{font:{family:'Inter',size:11},color:'#A08060'}},y:{grid:{color:'#EDE5D888'},ticks:{callback:v=>fmt(v),font:{family:'Inter',size:11},color:'#A08060'}}}}
+    options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{labels:{font:{family:'Inter'},color:ESPRESSO,boxWidth:10}}},scales:{x:{grid:{display:false},ticks:{font:{family:'Inter',size:11},color:'#A08060',maxRotation:0}},y:{grid:{color:'#EDE5D888'},ticks:{callback:v=>fmt(v),font:{family:'Inter',size:11},color:'#A08060'}}}}
   });
 
   destroyChart('spendingDonut');
@@ -2798,13 +2832,26 @@ function renderReports() {
     options:{responsive:true,maintainAspectRatio:false,cutout:'55%',plugins:{legend:{position:'right',labels:{font:{family:'Inter',size:10},color:ESPRESSO,boxWidth:10,padding:8}}}}
   });
 
-  const months=['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
-  document.getElementById('annual-body').innerHTML = months.map((m,i)=>{
-    const h = data.monthlyHistory.find(x=>x.month===m);
-    if(!h) return `<tr><td style="color:var(--brown-light)">${m}</td><td colspan="3" style="color:var(--brown-light);text-align:right;font-size:11px">—</td></tr>`;
-    const cf = h.income-h.expenses;
-    return `<tr><td style="font-weight:500">${m}</td><td style="text-align:right">${fmt(h.income)}</td><td style="text-align:right">${fmt(h.expenses)}</td><td style="text-align:right;font-weight:600;color:${cf>=0?'var(--sage)':'var(--terra)'}">${fmt(cf)}</td></tr>`;
-  }).join('');
+  const shortMonths=['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+  // Show all history sorted by year then month, most recent first
+  const allHistory = [...(data.monthlyHistory||[])].sort((a,b)=>{
+    const yearDiff = (b.year||2025) - (a.year||2025);
+    if(yearDiff !== 0) return yearDiff;
+    return shortMonths.indexOf(b.month) - shortMonths.indexOf(a.month);
+  });
+
+  document.getElementById('annual-body').innerHTML = allHistory.length
+    ? allHistory.map(h=>{
+        const cf = h.income - h.expenses;
+        const yr = h.year || '';
+        return `<tr>
+          <td style="font-weight:500">${h.month}${yr ? ` '${String(yr).slice(2)}` : ''}</td>
+          <td style="text-align:right">${fmt(h.income)}</td>
+          <td style="text-align:right">${fmt(h.expenses)}</td>
+          <td style="text-align:right;font-weight:600;color:${cf>=0?'var(--sage)':'var(--terra)'}">${fmt(cf)}</td>
+        </tr>`;
+      }).join('')
+    : `<tr><td colspan="4" style="color:var(--brown-light);text-align:center;padding:20px">No history yet — use Close Month at end of each month to build your record.</td></tr>`;
 }
 
 // ── SAVE / LOAD ──────────────────────────────────────────────
