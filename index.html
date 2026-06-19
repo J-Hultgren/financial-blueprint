@@ -661,23 +661,34 @@
     background: transparent !important;
   }
 
-  /* Clean inline number inputs in goal cards */
+  /* Clean inline number inputs in goal cards — visually editable */
   .goal-card .cur-input {
-    border: none;
-    background: transparent;
+    border-bottom: 1px dashed var(--mauve-light);
+    background: var(--rose-faint);
+    border-radius: 4px 4px 0 0;
+    padding: 1px 4px;
     font-size: 12px;
-    color: var(--mid);
+    font-weight: 600;
+    color: var(--ink);
     text-align: left;
     width: auto;
     max-width: 90px;
+    cursor: text;
+  }
+
+  .goal-card .cur-input:hover {
+    background: var(--mauve-faint);
+    border-bottom-color: var(--rose);
   }
 
   .goal-card .cur-input:focus {
-    border-bottom: 1px solid var(--sage);
+    border-bottom: 2px solid var(--rose);
+    background: white;
   }
 
   .goal-card .cur-sym {
     font-size: 11px;
+    color: var(--mauve);
   }
 
   .goal-target {
@@ -1781,7 +1792,6 @@
         <tbody id="transactions-body"></tbody>
       </table>
       <button class="add-row-btn" onclick="addTransaction()">+ Log expense</button>
-      <button class="add-row-btn" onclick="applyRecurring()" style="color:var(--rose);margin-left:8px">↻ Add recurring bills</button>
     </div>
   </div>
 
@@ -3224,7 +3234,7 @@ function renderBills() {
         ? `<span style="color:var(--mid)">${fmt(b.amount)}</span>`
         : curInput(b.amount, `data.bills[${i}].amount=raw;calcBills()`)}</td>
       <td>${b.freq}</td>
-      <td><span class="badge ${b.auto==='Yes'?'green':'neutral'}">${b.auto}</span></td>
+      <td><span class="badge ${b.auto==='Yes'?'green':'neutral'}" style="cursor:pointer;user-select:none" onclick="data.bills[${i}].auto=data.bills[${i}].auto==='Yes'?'No':'Yes';renderBills();triggerAutosave()" title="Click to toggle">${b.auto}</span></td>
       <td>${b.account}</td>
       <td>${isLinked ? '' : delBtn(`deleteBill(${i})`)}</td>
     </tr>`;
@@ -3383,7 +3393,7 @@ function renderGoals() {
         style="position:absolute;top:10px;right:10px;background:none;border:none;cursor:pointer;color:var(--light);font-size:16px;padding:2px 6px;border-radius:4px;line-height:1"
         onmouseover="this.style.color='var(--rose)'" onmouseout="this.style.color='var(--light)'">×</button>
       <div class="goal-icon">${g.icon}</div>
-      <div class="goal-name"><input class="editable" value="${g.name}" style="font-weight:600;font-size:14px" onchange="data.goals[${i}].name=this.value;triggerAutosave()"></div>
+      <div class="goal-name"><input class="editable" value="${g.name}" style="font-weight:600;font-size:14px;border-bottom:1px dashed var(--mauve-light);padding:1px 2px;width:100%" onchange="data.goals[${i}].name=this.value;triggerAutosave()" onfocus="this.style.borderBottomColor='var(--rose)'" onblur="this.style.borderBottomColor='var(--mauve-light)'"></div>
       <div class="goal-target">Target: ${curInputInline(g.target, `data.goals[${i}].target=raw;renderGoals()`)}</div>
       <div class="goal-saved">${fmt(g.saved)}</div>
       <div style="margin-bottom:6px">
