@@ -762,6 +762,15 @@
       padding-bottom: 80px; /* clear the bottom nav */
     }
 
+    /* Month indicator bar — wraps gracefully on small screens */
+    #month-indicator-bar {
+      padding: 6px 14px;
+      font-size: 11px;
+      flex-wrap: wrap;
+      top: 0;
+    }
+    #month-indicator-bar span:last-child { display: none; } /* hide the long explainer on mobile */
+
     /* Topbar */
     .topbar {
       padding: 10px 12px;
@@ -1071,6 +1080,8 @@
   body.dark-mode .auth-tab { color:#7A6A8A; }
   body.dark-mode .auth-tab.active { color:#F8EFF8; border-color:var(--rose-light); }
   body.dark-mode .auth-label { color:#9A8AAA; }
+  body.dark-mode #month-indicator-bar { background:#3D2D50; border-color:#5A4070; }
+  body.dark-mode #month-indicator-text { color:#F8EFF8; }
 
   /* ── CONFETTI CANVAS ─────────────────────────────────────────── */
   #confettiCanvas { position:fixed; top:0; left:0; width:100%; height:100%; pointer-events:none; z-index:999; display:none; }
@@ -1379,9 +1390,9 @@
     </button>
     <div class="topbar-title" id="pageTitle">Dashboard</div>
     <div class="topbar-right">
-      <!-- Split month + year pickers instead of one long scroll -->
+      <!-- Single global month + year picker — drives every page's data view -->
       <div style="display:flex;align-items:center;gap:4px">
-        <select class="month-select" id="monthPicker" onchange="updateDashboard()" style="width:auto">
+        <select class="month-select" id="monthPicker" onchange="globalMonthChanged()" style="width:auto">
           <option value="0">January</option><option value="1">February</option>
           <option value="2">March</option><option value="3">April</option>
           <option value="4">May</option><option value="5">June</option>
@@ -1389,7 +1400,7 @@
           <option value="8">September</option><option value="9">October</option>
           <option value="10">November</option><option value="11">December</option>
         </select>
-        <select class="month-select" id="yearPicker" onchange="updateDashboard()" style="width:auto">
+        <select class="month-select" id="yearPicker" onchange="globalMonthChanged()" style="width:auto">
         </select>
       </div>
       <div id="autosave-indicator" style="font-size:11px;color:var(--light);display:flex;align-items:center;gap:6px;white-space:nowrap">
@@ -1398,6 +1409,14 @@
         <button onclick="signOut()" style="background:none;border:1px solid var(--linen);border-radius:5px;padding:3px 8px;font-size:10px;cursor:pointer;color:var(--light);font-family:'Inter',sans-serif;margin-left:4px">Sign Out</button>
       </div>
     </div>
+  </div>
+
+  <!-- Persistent "viewing month" indicator — visible on every page -->
+  <div id="month-indicator-bar" style="background:var(--lav-faint);border-bottom:1px solid var(--parchment);padding:7px 24px;display:flex;align-items:center;gap:8px;font-size:12px;position:sticky;top:0;z-index:49">
+    <span style="color:var(--lavender)">📅</span>
+    <span style="color:var(--mid)">Viewing data for</span>
+    <strong id="month-indicator-text" style="color:var(--ink);font-weight:700">June 2026</strong>
+    <span style="color:var(--light);font-size:11px">— this applies to Budget, Bills, and Dashboard</span>
   </div>
 
   <!-- ══ START HERE ════════════════════════════════════════════ -->
@@ -2448,6 +2467,7 @@ async function initAppForUser() {
     await saveToSupabase();
   }, 2000);
 
+  updateMonthIndicator();
   renderDashboard();
 }
 
@@ -2574,6 +2594,7 @@ function showPage(id, el) {
   document.getElementById('page-'+id).classList.add('active');
   if(el) el.classList.add('active');
   document.getElementById('pageTitle').textContent = pageTitles[id] || id;
+  updateMonthIndicator();
   renderPage(id);
 }
 
@@ -2854,12 +2875,26 @@ function renderDashboard() {
 // ── BUDGET — PER-MONTH STATIC ─────────────────────────────────
 // Budget state: each month is keyed as "YYYY-MM"
 // data.monthlyBudgets = { "2026-06": { income:[...], expenses:[...] }, ... }
-
-let budgetYear = new Date().getFullYear();
-let budgetMonth = new Date().getMonth(); // 0-indexed
+//
+// IMPORTANT: there is only ONE month/year selector in this app — the picker
+// in the topbar. Every page (Budget, Bills via Debts, Dashboard) reads from
+// it. budgetYear/budgetMonth below are just convenience getters for that
+// single global state, never a separate value.
 
 const MONTHS_FULL = ['January','February','March','April','May','June','July','August','September','October','November','December'];
 const MONTHS_SHORT = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+
+function getGlobalYear() {
+  const yp = document.getElementById('yearPicker');
+  return yp && yp.value ? parseInt(yp.value) : new Date().getFullYear();
+}
+function getGlobalMonth() {
+  const mp = document.getElementById('monthPicker');
+  return mp && mp.value !== '' ? parseInt(mp.value) : new Date().getMonth();
+}
+// Backward-compatible getters used throughout the budget code below
+Object.defineProperty(window, 'budgetYear', { get: getGlobalYear });
+Object.defineProperty(window, 'budgetMonth', { get: getGlobalMonth });
 
 function budgetKey(y, m) {
   return `${y}-${String(m+1).padStart(2,'0')}`;
@@ -2922,11 +2957,43 @@ function syncBillsIntoBudgetMonth(mb) {
   mb.expenses = mb.expenses.filter(e => !e.fromBill || data.bills.some(b => b.name === e.fromBill));
 }
 
+// Called whenever the topbar month/year picker changes — updates the
+// indicator banner and re-renders whichever page is currently active.
+function globalMonthChanged() {
+  updateMonthIndicator();
+  const activePage = document.querySelector('.page.active');
+  if(activePage) {
+    const pageId = activePage.id.replace('page-', '');
+    renderPage(pageId);
+  }
+}
+
+function updateMonthIndicator() {
+  const el = document.getElementById('month-indicator-text');
+  if(el) el.textContent = `${MONTHS_FULL[getGlobalMonth()]} ${getGlobalYear()}`;
+}
+
+// Moves the global month picker forward/back by `dir` months, used by the
+// Budget page's ‹ › navigator — this changes the SAME state every other
+// page reads from, so the indicator banner always matches.
 function budgetShiftMonth(dir) {
-  budgetMonth += dir;
-  if(budgetMonth > 11) { budgetMonth = 0; budgetYear++; }
-  if(budgetMonth < 0) { budgetMonth = 11; budgetYear--; }
-  renderBudget();
+  const mp = document.getElementById('monthPicker');
+  const yp = document.getElementById('yearPicker');
+  let m = getGlobalMonth() + dir;
+  let y = getGlobalYear();
+  if(m > 11) { m = 0; y++; }
+  if(m < 0) { m = 11; y--; }
+  if(mp) mp.value = m;
+  if(yp) {
+    // Ensure the target year exists as an option (picker only pre-populates a range)
+    if(![...yp.options].some(o => parseInt(o.value) === y)) {
+      const opt = document.createElement('option');
+      opt.value = y; opt.textContent = y;
+      yp.appendChild(opt);
+    }
+    yp.value = y;
+  }
+  globalMonthChanged();
 }
 
 function quickSetIncome(type) {
