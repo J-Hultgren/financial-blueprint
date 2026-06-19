@@ -2104,13 +2104,19 @@
 
         <div class="card">
           <div class="card-title">Data Management</div>
-          <p style="font-size:13px;color:var(--light);margin-bottom:14px">Your data stays in your browser. It never leaves your device.</p>
+          <p style="font-size:13px;color:var(--light);margin-bottom:14px">Your data syncs to your account and is backed up locally in this browser.</p>
           <div style="display:flex;flex-direction:column;gap:8px">
             <button onclick="exportData()" style="padding:10px 16px;border:1px solid var(--linen);border-radius:6px;background:var(--cream);font-family:'Inter',sans-serif;font-size:13px;cursor:pointer;color:var(--ink);text-align:left">📤 Export Data (JSON backup)</button>
             <button onclick="importData()" style="padding:10px 16px;border:1px solid var(--linen);border-radius:6px;background:var(--cream);font-family:'Inter',sans-serif;font-size:13px;cursor:pointer;color:var(--ink);text-align:left">📥 Import Data (restore backup)</button>
             <input type="file" id="import-file" accept=".json" style="display:none" onchange="loadImport(this)">
             <button onclick="if(confirm('Clear all data? This cannot be undone.'))clearData()" style="padding:10px 16px;border:1px solid var(--rose-faint);border-radius:6px;background:var(--rose-faint);color:var(--rose);font-family:'Inter',sans-serif;font-size:13px;cursor:pointer;text-align:left">🗑 Clear All Data</button>
           </div>
+        </div>
+
+        <div class="card" style="margin-top:16px;border-color:var(--mauve-light)">
+          <div class="card-title">Recovery</div>
+          <p style="font-size:13px;color:var(--light);margin-bottom:10px" id="recovery-status">Checking for a local backup…</p>
+          <button onclick="restoreLocalBackup()" style="padding:10px 16px;border:1px solid var(--mauve-light);border-radius:6px;background:var(--mauve-faint);color:var(--mauve);font-family:'Inter',sans-serif;font-size:13px;cursor:pointer;text-align:left;width:100%">🔄 Restore from local backup</button>
         </div>
       </div>
     </div>
@@ -2258,21 +2264,52 @@ async function signOut() {
 }
 
 // ── SUPABASE SYNC ─────────────────────────────────────────────
+// Returns { data: <object|null>, failed: <bool> }
+// failed=true means we genuinely could not determine the state (network/query error) —
+// caller must NOT treat this the same as "confirmed empty account".
 async function loadFromSupabase() {
-  if(!currentUser) return null;
+  if(!currentUser) return { data: null, failed: true };
   try {
     const { data: rows, error } = await supa
       .from('financial_blueprint')
       .select('data')
       .eq('user_id', currentUser.id)
       .maybeSingle();
-    if(error) { console.error('Load error:', error.message); return null; }
-    return rows?.data || null;
-  } catch(e) { console.error('Load exception:', e); return null; }
+    if(error) {
+      console.error('Load error:', error.message);
+      return { data: null, failed: true }; // real error — not safe to assume empty
+    }
+    // No error and no row = genuinely no saved data yet (new account)
+    return { data: rows?.data || null, failed: false };
+  } catch(e) {
+    console.error('Load exception:', e);
+    return { data: null, failed: true };
+  }
 }
 
 async function saveToSupabase() {
   if(!currentUser) return;
+
+  // Safety check: never autosave what looks like accidentally-blank data
+  // over a user who has been using the app (has an id and has loaded before).
+  // This catches edge cases where `data` got reset but save still fired.
+  const looksEmpty = (!data.debts || data.debts.length === 0)
+    && (!data.bills || data.bills.length === 0)
+    && (!data.monthlyBudgets || Object.keys(data.monthlyBudgets).length === 0)
+    && (!data.assets || data.assets.every(a => !a.value))
+    && (!data.goals || data.goals.every(g => !g.saved));
+  if(looksEmpty && localStorage.getItem(`fb_backup_${currentUser.id}`)) {
+    console.warn('Skipped autosave: data looks suspiciously empty but a local backup exists. Not overwriting cloud data.');
+    setSyncStatus('error');
+    showToast('⚠ Save paused — your data looks empty. Refresh and sign in again to recover.', 6000);
+    return;
+  }
+
+  // Always keep a local backup copy as a recovery point, independent of cloud sync
+  try {
+    localStorage.setItem(`fb_backup_${currentUser.id}`, JSON.stringify({ data, savedAt: new Date().toISOString() }));
+  } catch(e) { /* localStorage full or unavailable — non-fatal */ }
+
   setSyncStatus('syncing');
   try {
     const payload = JSON.parse(JSON.stringify(data));
@@ -2313,14 +2350,44 @@ function setSyncStatus(status) {
 }
 
 async function initAppForUser() {
-  // Load data from Supabase
-  const remote = await loadFromSupabase();
+  // Load data from Supabase — result tells us if this is confirmed-empty
+  // (safe to use defaults) vs a failed load (NOT safe to assume empty)
+  const loadResult = await loadFromSupabase();
+  const remote = loadResult.data;
+  const loadFailed = loadResult.failed;
+
   if(remote) {
-    // Merge with defaults for any missing fields
+    // Real data found — merge with defaults only to fill in missing NEW fields,
+    // never to replace existing data
     const _def = JSON.parse(JSON.stringify(defaultData));
     data = Object.assign({}, _def, remote);
     ensureDataFields();
+  } else if(loadFailed) {
+    // The load genuinely failed (network/query error) — we do NOT know if this
+    // account has data or not. Proceeding with blank defaults risks autosaving
+    // over real cloud data. Block and let the person retry instead.
+    const proceedAsNew = confirm(
+      "We had trouble connecting to load your saved data (this is different from a brand new account).\n\n" +
+      "Click Cancel (recommended) to stop safely and try signing in again — nothing will be touched.\n\n" +
+      "Only click OK if you're certain this is a brand new account with nothing saved yet."
+    );
+    if(!proceedAsNew) {
+      document.getElementById('authScreen').style.display = 'flex';
+      document.getElementById('auth-form').style.display = 'block';
+      document.getElementById('auth-loading').style.display = 'none';
+      document.getElementById('auth-error').textContent = 'Stopped to protect your data. Please try signing in again.';
+      currentUser = null;
+      return; // halt — do not proceed into the app with blank data
+    }
+    data = JSON.parse(JSON.stringify(defaultData));
+    ensureDataFields();
+  } else {
+    // loadFailed === false and remote === null: confirmed genuinely empty account.
+    // Safe to start fresh with defaults.
+    data = JSON.parse(JSON.stringify(defaultData));
+    ensureDataFields();
   }
+
   // Set name — never show email address
   const meta = currentUser?.user_metadata;
   const emailAddr = currentUser?.email || '';
@@ -3808,6 +3875,42 @@ function renderAlertSettings() {
       </div>
     </div>`;
   }).join('');
+  checkRecoveryStatus();
+}
+
+function checkRecoveryStatus() {
+  const el = document.getElementById('recovery-status');
+  if(!el || !currentUser) return;
+  const backup = localStorage.getItem(`fb_backup_${currentUser.id}`);
+  if(backup) {
+    try {
+      const parsed = JSON.parse(backup);
+      const when = new Date(parsed.savedAt).toLocaleString('en-US', {dateStyle:'medium', timeStyle:'short'});
+      el.textContent = `Local backup found from ${when}. Use this if your data ever looks wrong or empty.`;
+    } catch(e) {
+      el.textContent = 'A local backup exists but could not be read.';
+    }
+  } else {
+    el.textContent = 'No local backup yet — one is created automatically every time you make a change.';
+  }
+}
+
+function restoreLocalBackup() {
+  if(!currentUser) return;
+  const backup = localStorage.getItem(`fb_backup_${currentUser.id}`);
+  if(!backup) { showToast('No local backup found on this device'); return; }
+  try {
+    const parsed = JSON.parse(backup);
+    const when = new Date(parsed.savedAt).toLocaleString('en-US', {dateStyle:'medium', timeStyle:'short'});
+    if(!confirm(`Restore your data from the local backup saved ${when}?\n\nThis will replace what's currently shown and saved to your account.`)) return;
+    data = parsed.data;
+    ensureDataFields();
+    triggerAutosave();
+    renderDashboard();
+    showToast('✓ Restored from local backup');
+  } catch(e) {
+    showToast('⚠ Could not read the local backup file');
+  }
 }
 
 function getAlertStatus(cat, actual) {
