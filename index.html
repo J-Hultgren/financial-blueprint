@@ -1688,7 +1688,7 @@
         <div class="card-title">Income <span style="font-size:10px;color:var(--light);font-weight:400;text-transform:none;letter-spacing:0">— enters actual paychecks received this month</span></div>
         <table class="data-table" id="income-table">
           <thead><tr>
-            <th>Source</th><th style="text-align:right">Planned</th><th style="text-align:right">Actual</th><th style="text-align:right">Difference</th>
+            <th>Source</th><th style="text-align:right">Planned</th><th style="text-align:right">Actual</th><th style="text-align:right">Difference</th><th></th>
           </tr></thead>
           <tbody id="income-body"></tbody>
           <tfoot><tr class="total-row">
@@ -1696,6 +1696,7 @@
             <td style="text-align:right" id="income-planned-total">$0</td>
             <td style="text-align:right" id="income-actual-total">$0</td>
             <td style="text-align:right" id="income-diff-total">$0</td>
+            <td></td>
           </tr></tfoot>
         </table>
         <button class="add-row-btn" onclick="addIncomeRow()">+ Add income source</button>
@@ -1705,7 +1706,7 @@
         <div class="card-title">Expenses <span style="font-size:10px;color:var(--light);font-weight:400;text-transform:none;letter-spacing:0">— planned vs what you actually spent</span></div>
         <table class="data-table" id="expense-table">
           <thead><tr>
-            <th>Category</th><th style="text-align:right">Planned</th><th style="text-align:right">Actual</th><th style="text-align:right">Difference</th>
+            <th>Category</th><th style="text-align:right">Planned</th><th style="text-align:right">Actual</th><th style="text-align:right">Difference</th><th></th>
           </tr></thead>
           <tbody id="expense-body"></tbody>
           <tfoot><tr class="total-row">
@@ -1713,6 +1714,7 @@
             <td style="text-align:right" id="expense-planned-total">$0</td>
             <td style="text-align:right" id="expense-actual-total">$0</td>
             <td style="text-align:right" id="expense-diff-total">$0</td>
+            <td></td>
           </tr></tfoot>
         </table>
         <button class="add-row-btn" onclick="addExpenseRow()">+ Add expense</button>
@@ -1807,7 +1809,7 @@
       <div class="card-title">Recurring Bills</div>
       <table class="data-table">
         <thead><tr>
-          <th>Bill</th><th>Due Date</th><th style="text-align:right">Amount</th><th>Frequency</th><th>Auto-Pay</th><th>Account</th>
+          <th>Bill</th><th>Due Date</th><th style="text-align:right">Amount</th><th>Frequency</th><th>Auto-Pay</th><th>Account</th><th></th>
         </tr></thead>
         <tbody id="bills-body"></tbody>
       </table>
@@ -1843,7 +1845,7 @@
       <div class="card-title">Your Debts</div>
       <table class="data-table">
         <thead><tr>
-          <th>Debt Name</th><th style="text-align:right">Balance</th><th style="text-align:right">APR</th><th style="text-align:right">Min Payment</th><th style="text-align:right">Extra Payment</th><th style="text-align:right">Total Payment</th><th>Payoff Date</th><th></th>
+          <th>Debt Name</th><th style="text-align:right">Balance</th><th style="text-align:right">APR</th><th style="text-align:right">Min Payment</th><th style="text-align:right">Extra Payment</th><th style="text-align:right">Total Payment</th><th>Payoff Date</th><th></th><th></th>
         </tr></thead>
         <tbody id="debt-body"></tbody>
         <tfoot><tr class="total-row">
@@ -1900,18 +1902,18 @@
       <div class="card">
         <div class="card-title">Assets — what you own</div>
         <table class="data-table">
-          <thead><tr><th>Asset</th><th style="text-align:right">Value</th></tr></thead>
+          <thead><tr><th>Asset</th><th style="text-align:right">Value</th><th></th></tr></thead>
           <tbody id="assets-body"></tbody>
-          <tfoot><tr class="total-row"><td>Total Assets</td><td style="text-align:right" id="assets-total">$0</td></tr></tfoot>
+          <tfoot><tr class="total-row"><td>Total Assets</td><td style="text-align:right" id="assets-total">$0</td><td></td></tr></tfoot>
         </table>
         <button class="add-row-btn" onclick="addAsset()">+ Add asset</button>
       </div>
       <div class="card">
         <div class="card-title">Liabilities — what you owe</div>
         <table class="data-table">
-          <thead><tr><th>Liability</th><th style="text-align:right">Balance</th></tr></thead>
+          <thead><tr><th>Liability</th><th style="text-align:right">Balance</th><th></th></tr></thead>
           <tbody id="liabilities-body"></tbody>
-          <tfoot><tr class="total-row"><td>Total Liabilities</td><td style="text-align:right" id="liabilities-total">$0</td></tr></tfoot>
+          <tfoot><tr class="total-row"><td>Total Liabilities</td><td style="text-align:right" id="liabilities-total">$0</td><td></td></tr></tfoot>
         </table>
         <button class="add-row-btn" onclick="addLiability()">+ Add liability</button>
       </div>
@@ -2129,6 +2131,13 @@
 </nav>
 
 <script>
+// ── DELETE ROW BUTTON HELPER ───────────────────────────────────
+function delBtn(onclickFn) {
+  return `<button onclick="${onclickFn}" title="Remove"
+    style="background:none;border:none;cursor:pointer;color:var(--light);font-size:16px;padding:2px 6px;border-radius:4px;line-height:1;transition:color .15s"
+    onmouseover="this.style.color='var(--rose)'" onmouseout="this.style.color='var(--light)'">×</button>`;
+}
+
 // ── CURRENCY INPUT HELPERS ────────────────────────────────────────
 // Generates an HTML string for a currency input field.
 // val        = raw number stored in data
@@ -2351,6 +2360,10 @@ async function initAppForUser() {
 
   // Restore setup checklist state
   setTimeout(restoreSetupChecks, 500);
+
+  // Pre-generate the next 12 months of budgets from the current month's template,
+  // so income/expenses are pre-filled and just need adjusting as each month arrives.
+  setTimeout(pregenerateFutureMonths, 800);
 
   // Do an initial save to confirm sync is working
   setTimeout(async () => {
@@ -2577,6 +2590,24 @@ function restoreSetupChecks() {
 }
 
 
+// Pre-creates the next 12 months of budgets using the current/most recent
+// month as a template, so future months are ready to view and adjust.
+function pregenerateFutureMonths() {
+  const now = new Date();
+  let y = now.getFullYear(), m = now.getMonth();
+  let createdAny = false;
+  for(let i = 0; i < 12; i++) {
+    const key = budgetKey(y, m);
+    if(!data.monthlyBudgets?.[key]) {
+      getBudgetForMonth(y, m); // creates it from template if missing
+      createdAny = true;
+    }
+    m++;
+    if(m > 11) { m = 0; y++; }
+  }
+  if(createdAny) triggerAutosave();
+}
+
 function getMonthlyChartData() {
   const shortMonths = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
   const yp = document.getElementById('yearPicker');
@@ -2760,14 +2791,58 @@ function budgetKey(y, m) {
 function getBudgetForMonth(y, m) {
   const key = budgetKey(y, m);
   if(!data.monthlyBudgets) data.monthlyBudgets = {};
+
   if(!data.monthlyBudgets[key]) {
-    // New month — copy structure from template or default
+    // New month — find the most recent prior month with data to use as a template,
+    // otherwise fall back to the default income/expense structure.
+    const template = findMostRecentBudgetTemplate(y, m);
+    const baseIncome = template ? template.income : data.income;
+    const baseExpenses = template ? template.expenses : data.expenses;
+
     data.monthlyBudgets[key] = {
-      income: JSON.parse(JSON.stringify(data.income)),
-      expenses: JSON.parse(JSON.stringify(data.expenses))
+      income: JSON.parse(JSON.stringify(baseIncome)).map(r => ({...r, actual: 0})), // reset actuals for new month
+      expenses: JSON.parse(JSON.stringify(baseExpenses)).map(r => ({...r, actual: 0}))
     };
   }
+
+  // Always pull recurring bills into expenses as planned amounts (auto-populated, editable actuals)
+  syncBillsIntoBudgetMonth(data.monthlyBudgets[key]);
+
   return data.monthlyBudgets[key];
+}
+
+// Finds the closest prior month that has saved budget data, to use as a template
+// for a newly-opened future month. Searches up to 24 months back.
+function findMostRecentBudgetTemplate(y, m) {
+  if(!data.monthlyBudgets) return null;
+  let searchY = y, searchM = m;
+  for(let i = 0; i < 24; i++) {
+    searchM--;
+    if(searchM < 0) { searchM = 11; searchY--; }
+    const key = budgetKey(searchY, searchM);
+    if(data.monthlyBudgets[key]) return data.monthlyBudgets[key];
+  }
+  return null;
+}
+
+// Pulls every recurring bill into the month's expense list as a planned amount.
+// Bills are matched by name so user edits to "actual" persist; only "planned"
+// auto-updates if the bill's amount changes.
+function syncBillsIntoBudgetMonth(mb) {
+  if(!data.bills) return;
+  data.bills.forEach(bill => {
+    if(bill.freq !== 'Monthly') return; // only recurring monthly bills auto-populate
+    let row = mb.expenses.find(e => e.fromBill === bill.name || e.cat === bill.name);
+    if(!row) {
+      row = { cat: bill.name, planned: bill.amount, actual: 0, fromBill: bill.name };
+      mb.expenses.push(row);
+    } else {
+      row.planned = bill.amount; // keep planned amount synced; actual stays user-controlled
+      row.fromBill = bill.name;
+    }
+  });
+  // Remove expense rows linked to bills that were deleted
+  mb.expenses = mb.expenses.filter(e => !e.fromBill || data.bills.some(b => b.name === e.fromBill));
 }
 
 function budgetShiftMonth(dir) {
@@ -2844,6 +2919,7 @@ function renderBudget() {
     <td>${curInput(r.planned, `getBudgetForMonth(${budgetYear},${budgetMonth}).income[${i}].planned=raw;calcBudget()`)}</td>
     <td>${curInput(r.actual, `getBudgetForMonth(${budgetYear},${budgetMonth}).income[${i}].actual=raw;calcBudget()`)}</td>
     <td style="text-align:right;color:${r.actual-r.planned>=0?'var(--sage)':'var(--rose)'}">${fmt(r.actual-r.planned)}</td>
+    <td>${delBtn(`deleteIncomeRow(${i})`)}</td>
   </tr>`).join('');
 
   const eb = document.getElementById('expense-body');
@@ -2852,18 +2928,42 @@ function renderBudget() {
     const alertHtml = alert ? `
       <div class="alert-bar"><div class="alert-fill ${alert.status}" style="width:${Math.round(alert.pct*100)}%"></div></div>
       <span class="alert-badge ${alert.status}">${alert.label}</span>` : '';
+    const isFromBill = !!r.fromBill;
+    const linkBadge = isFromBill
+      ? `<span style="font-size:9px;color:var(--mauve);background:var(--mauve-faint);padding:1px 6px;border-radius:99px;margin-left:6px;white-space:nowrap">🔗 from Bills</span>`
+      : '';
     return `<tr>
       <td>
-        <input class="editable" value="${r.cat}" onchange="getBudgetForMonth(${budgetYear},${budgetMonth}).expenses[${i}].cat=this.value">
-        ${alertHtml}
+        <input class="editable" value="${r.cat}" ${isFromBill ? 'readonly title="Linked to a bill — edit on the Bills tab"' : ''}
+          onchange="getBudgetForMonth(${budgetYear},${budgetMonth}).expenses[${i}].cat=this.value"
+          style="${isFromBill ? 'opacity:0.8' : ''}">
+        ${linkBadge}${alertHtml}
       </td>
-      <td>${curInput(r.planned, `getBudgetForMonth(${budgetYear},${budgetMonth}).expenses[${i}].planned=raw;calcBudget()`)}</td>
+      <td>${isFromBill
+        ? `<span style="display:block;text-align:right;color:var(--mid)">${fmt(r.planned)}</span>`
+        : curInput(r.planned, `getBudgetForMonth(${budgetYear},${budgetMonth}).expenses[${i}].planned=raw;calcBudget()`)}</td>
       <td>${curInput(r.actual, `getBudgetForMonth(${budgetYear},${budgetMonth}).expenses[${i}].actual=raw;calcBudget()`)}</td>
       <td style="text-align:right;color:${r.planned-r.actual>=0?'var(--sage)':'var(--rose)'}">${fmt(r.planned-r.actual)}</td>
+      <td>${isFromBill ? '' : delBtn(`deleteExpenseRow(${i})`)}</td>
     </tr>`;
   }).join('');
 
   calcBudget();
+}
+
+function deleteIncomeRow(i) {
+  const mb = getBudgetForMonth(budgetYear, budgetMonth);
+  mb.income.splice(i, 1);
+  renderBudget();
+  triggerAutosave();
+}
+
+function deleteExpenseRow(i) {
+  const mb = getBudgetForMonth(budgetYear, budgetMonth);
+  if(mb.expenses[i]?.fromBill) { showToast('This expense is linked to a bill — remove it from the Bills tab instead'); return; }
+  mb.expenses.splice(i, 1);
+  renderBudget();
+  triggerAutosave();
 }
 
 function calcBudget() {
@@ -3056,17 +3156,87 @@ function deleteTransaction(i) {
 
 
 // ── BILLS ─────────────────────────────────────────────────────
+// ── DUE DATE SORTING ────────────────────────────────────────────
+// Parses "1st", "15th", "3rd" etc into a number for sorting
+function dueDateNum(due) {
+  if(!due) return 99;
+  const n = parseInt(due);
+  return isNaN(n) ? 99 : n; // non-numeric due dates (e.g. "Payroll") sort last
+}
+
+// ── DEBTS → BILLS SYNC ──────────────────────────────────────────
+// Every debt's minimum payment auto-appears as a bill, tagged fromDebt.
+// User can edit the due date/account on the bill; editing the debt's
+// minimum payment updates the linked bill automatically.
+function syncDebtsToBills() {
+  if(!data.bills) data.bills = [];
+  data.debts.forEach((d, debtIdx) => {
+    let bill = data.bills.find(b => b.fromDebt === d.name || b.fromDebtIdx === debtIdx);
+    if(!bill) {
+      // Create new linked bill — default due date 1st, user can adjust
+      bill = {
+        name: `${d.name} (min payment)`,
+        due: '1st',
+        amount: d.min,
+        freq: 'Monthly',
+        auto: 'Yes',
+        account: 'Checking',
+        fromDebt: d.name,
+        fromDebtIdx: debtIdx
+      };
+      data.bills.push(bill);
+    } else {
+      // Keep amount and name in sync with the debt; due date/account stay user-editable
+      bill.amount = d.min;
+      bill.name = `${d.name} (min payment)`;
+      bill.fromDebt = d.name;
+      bill.fromDebtIdx = debtIdx;
+    }
+  });
+  // Remove bills linked to debts that no longer exist
+  data.bills = data.bills.filter(b => !b.fromDebt || data.debts.some(d => d.name === b.fromDebt));
+}
+
 function renderBills() {
+  syncDebtsToBills();
+
+  // Sort by due date ascending (1st at top)
+  const sortedBills = data.bills
+    .map((b, originalIdx) => ({...b, originalIdx}))
+    .sort((a, b) => dueDateNum(a.due) - dueDateNum(b.due));
+
   const tbody = document.getElementById('bills-body');
-  tbody.innerHTML = data.bills.map((b,i)=>`<tr>
-    <td><input class="editable" value="${b.name}" onchange="data.bills[${i}].name=this.value;calcBills();triggerAutosave()"></td>
-    <td><input class="editable" value="${b.due}" style="width:60px" onchange="data.bills[${i}].due=this.value;triggerAutosave()"></td>
-    <td style="text-align:right">${curInput(b.amount, `data.bills[${i}].amount=raw;calcBills()`)}</td>
-    <td>${b.freq}</td>
-    <td><span class="badge ${b.auto==='Yes'?'green':'neutral'}">${b.auto}</span></td>
-    <td>${b.account}</td>
-  </tr>`).join('');
+  tbody.innerHTML = sortedBills.map((b) => {
+    const i = b.originalIdx; // use original index for edits/deletes
+    const isLinked = !!b.fromDebt;
+    const linkBadge = isLinked
+      ? `<span style="font-size:9px;color:var(--mauve);background:var(--mauve-faint);padding:1px 6px;border-radius:99px;margin-left:6px;white-space:nowrap">🔗 from Debts</span>`
+      : '';
+    return `<tr>
+      <td>
+        <input class="editable" value="${b.name}" ${isLinked ? 'readonly title="Linked to a debt — edit the name on the Debt Payoff tab"' : ''}
+          onchange="data.bills[${i}].name=this.value;calcBills();triggerAutosave()"
+          style="${isLinked ? 'opacity:0.8' : ''}">
+        ${linkBadge}
+      </td>
+      <td><input class="editable" value="${b.due}" style="width:60px" onchange="data.bills[${i}].due=this.value;renderBills();triggerAutosave()"></td>
+      <td style="text-align:right">${isLinked
+        ? `<span style="color:var(--mid)">${fmt(b.amount)}</span>`
+        : curInput(b.amount, `data.bills[${i}].amount=raw;calcBills()`)}</td>
+      <td>${b.freq}</td>
+      <td><span class="badge ${b.auto==='Yes'?'green':'neutral'}">${b.auto}</span></td>
+      <td>${b.account}</td>
+      <td>${isLinked ? '' : delBtn(`deleteBill(${i})`)}</td>
+    </tr>`;
+  }).join('');
   calcBills();
+}
+
+function deleteBill(i) {
+  if(data.bills[i]?.fromDebt) { showToast('This bill is linked to a debt — remove it from Debt Payoff instead'); return; }
+  data.bills.splice(i, 1);
+  renderBills();
+  triggerAutosave();
 }
 
 function calcBills() {
@@ -3085,6 +3255,8 @@ function addBill() {
 
 // ── DEBT ──────────────────────────────────────────────────────
 function renderDebt() {
+  syncDebtsToBills(); // keep Bills tab in sync whenever debts change
+
   const tbody = document.getElementById('debt-body');
   // Determine current month key e.g. "2026-06"
   const now = new Date();
@@ -3117,6 +3289,7 @@ function renderDebt() {
           ${paidThisMonth ? '+ Another' : '+ Payment'}
         </button>
       </td>
+      <td>${delBtn(`deleteDebt(${i})`)}</td>
     </tr>`;
   }).join('');
 
@@ -3192,13 +3365,23 @@ function addDebt() {
   renderDebt();
 }
 
+function deleteDebt(i) {
+  if(!confirm(`Remove "${data.debts[i].name}" from your debt tracker? Payment history will be lost.`)) return;
+  data.debts.splice(i, 1);
+  renderDebt();
+  triggerAutosave();
+}
+
 // ── GOALS ────────────────────────────────────────────────────
 function renderGoals() {
   const grid = document.getElementById('goals-grid');
   grid.innerHTML = data.goals.map((g,i)=>{
     const pct = g.target>0 ? Math.min(1,g.saved/g.target) : 0;
     const monthsLeft = g.target>g.saved ? 'Enter monthly contribution to see timeline' : '✅ Done!';
-    return `<div class="goal-card">
+    return `<div class="goal-card" style="position:relative">
+      <button onclick="deleteGoal(${i})" title="Remove goal"
+        style="position:absolute;top:10px;right:10px;background:none;border:none;cursor:pointer;color:var(--light);font-size:16px;padding:2px 6px;border-radius:4px;line-height:1"
+        onmouseover="this.style.color='var(--rose)'" onmouseout="this.style.color='var(--light)'">×</button>
       <div class="goal-icon">${g.icon}</div>
       <div class="goal-name"><input class="editable" value="${g.name}" style="font-weight:600;font-size:14px" onchange="data.goals[${i}].name=this.value;triggerAutosave()"></div>
       <div class="goal-target">Target: ${curInputInline(g.target, `data.goals[${i}].target=raw;renderGoals()`)}</div>
@@ -3216,6 +3399,13 @@ function renderGoals() {
   }).join('');
 }
 
+function deleteGoal(i) {
+  if(!confirm(`Remove "${data.goals[i].name}" goal?`)) return;
+  data.goals.splice(i, 1);
+  renderGoals();
+  triggerAutosave();
+}
+
 function addGoal() {
   const icons=['🌟','💰','🎯','🏖️','🚀','💎'];
   data.goals.push({name:'New Goal', icon:icons[data.goals.length%icons.length], target:5000, saved:0});
@@ -3228,12 +3418,14 @@ function renderNetworth() {
   ab.innerHTML = data.assets.map((a,i)=>`<tr>
     <td><input class="editable" value="${a.name}" onchange="data.assets[${i}].name=this.value"></td>
     <td style="text-align:right">${curInput(a.value, `data.assets[${i}].value=raw;calcNetworth()`)}</td>
+    <td>${delBtn(`deleteAsset(${i})`)}</td>
   </tr>`).join('');
 
   const lb = document.getElementById('liabilities-body');
   lb.innerHTML = data.liabilities.map((l,i)=>`<tr>
     <td><input class="editable" value="${l.name}" onchange="data.liabilities[${i}].name=this.value"></td>
     <td style="text-align:right">${curInput(l.value, `data.liabilities[${i}].value=raw;calcNetworth()`)}</td>
+    <td>${delBtn(`deleteLiability(${i})`)}</td>
   </tr>`).join('');
 
   calcNetworth();
@@ -3289,6 +3481,8 @@ function calcNetworth() {
 
 function addAsset() { data.assets.push({name:'New Asset',value:0}); renderNetworth(); }
 function addLiability() { data.liabilities.push({name:'New Liability',value:0}); renderNetworth(); }
+function deleteAsset(i) { data.assets.splice(i,1); renderNetworth(); triggerAutosave(); }
+function deleteLiability(i) { data.liabilities.splice(i,1); renderNetworth(); triggerAutosave(); }
 
 // ── REPORTS ──────────────────────────────────────────────────
 function renderReports() {
