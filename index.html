@@ -993,12 +993,13 @@
 
   /* ── DARK MODE ───────────────────────────────────────────────── */
   body.dark-mode {
-    --cream:#1A1410; --linen:#242018; --parchment:#3A3020;
-    --sage-faint:#1E2A1A; --terra-faint:#2A1810; --white:#2C2416;
-    --brown-light:#8A7060; --brown-mid:#A09070; --espresso:#F5EDD9;
-    background:#1A1410; color:#F8EFF8;
+    --cream:#1A1410; --linen:#241A30; --parchment:#3D2D50;
+    --sage-faint:#1A2A1A; --rose-faint:#2A1822; --mauve-faint:#241A30; --lav-faint:#241A30; --white:#2D1F3D;
+    --ink:#F0E5F5; --mid:#B8A0C8; --light:#8A7090;
+    --rose-light:#E8A4B8; --mauve-light:#C4A0B4;
+    background:#1A1410; color:#F0E5F5;
   }
-  body.dark-mode .sidebar { background:#0E0C08; }
+  body.dark-mode .sidebar { background:#15101F; }
   /* Active nav item must stay readable in dark mode */
   body.dark-mode .nav-item { color: rgba(255,255,255,0.45); }
   body.dark-mode .nav-item:hover { color: #F5EDD9; background: rgba(255,255,255,0.06); }
@@ -3402,19 +3403,22 @@ function renderDebt() {
   syncDebtsToBills(); // keep Bills tab in sync whenever debts change
 
   const tbody = document.getElementById('debt-body');
-  // Determine current month key e.g. "2026-06"
-  const now = new Date();
-  const currentMonthKey = `${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,'0')}`;
+  // Determine the currently VIEWED month (from the global picker), not just today's real date
+  const viewYear = getGlobalYear();
+  const viewMonth = getGlobalMonth();
+  const viewMonthKey = `${viewYear}-${String(viewMonth+1).padStart(2,'0')}`;
+  const isCurrentRealMonth = viewYear === new Date().getFullYear() && viewMonth === new Date().getMonth();
 
   tbody.innerHTML = data.debts.map((d,i)=>{
     const total = d.min + (d.extra||0);
     const payoffDate = calcSingleDebtPayoff(d.balance, d.apr/100/12, total);
 
-    // Check if a payment was logged this calendar month
-    const paidThisMonth = (d.payments||[]).some(p => p.date && p.date.startsWith(currentMonthKey));
+    // Check if a payment was logged for the month currently being viewed
+    const paidThisMonth = (d.payments||[]).some(p => p.date && p.date.startsWith(viewMonthKey));
+    const dueLabel = isCurrentRealMonth ? '○ Due' : '○ Not yet logged';
     const paidBadge = paidThisMonth
-      ? `<span style="display:inline-flex;align-items:center;gap:4px;background:#E8F5E9;border:1px solid #81C784;color:#2E7D32;border-radius:99px;padding:3px 9px;font-size:10px;font-weight:600;white-space:nowrap">✓ Paid</span>`
-      : `<span style="display:inline-flex;align-items:center;gap:4px;background:var(--rose-faint);border:1px solid var(--rose-light);color:var(--rose);border-radius:99px;padding:3px 9px;font-size:10px;font-weight:600;white-space:nowrap">○ Due</span>`;
+      ? `<span style="display:inline-flex;align-items:center;gap:4px;background:#E8F5E9;border:1px solid #81C784;color:#2E7D32;border-radius:99px;padding:3px 9px;font-size:10px;font-weight:600;white-space:nowrap">✓ Paid (${MONTHS_SHORT[viewMonth]})</span>`
+      : `<span style="display:inline-flex;align-items:center;gap:4px;background:var(--rose-faint);border:1px solid var(--rose-light);color:var(--rose);border-radius:99px;padding:3px 9px;font-size:10px;font-weight:600;white-space:nowrap">${dueLabel}</span>`;
 
     return `<tr style="${paidThisMonth ? 'opacity:0.75' : ''}">
       <td>
@@ -3752,8 +3756,13 @@ function openPaymentModal(i) {
   document.getElementById('modal-debt-sub').textContent =
     `Current balance: ${fmt(d.balance)}  ·  APR: ${d.apr}%`;
 
-  // Default date to today
-  document.getElementById('modal-date').value = todayISO();
+  // Default date to today if viewing the current real month, otherwise the
+  // 1st of whichever month is currently selected in the global picker
+  const viewY = getGlobalYear(), viewM = getGlobalMonth();
+  const isRealCurrentMonth = viewY === new Date().getFullYear() && viewM === new Date().getMonth();
+  document.getElementById('modal-date').value = isRealCurrentMonth
+    ? todayISO()
+    : `${viewY}-${String(viewM+1).padStart(2,'0')}-01`;
 
   // Default amount to total scheduled payment
   const defaultAmt = (d.min + (d.extra||0)) || '';
@@ -3810,11 +3819,37 @@ function submitPayment() {
   // Update balance
   d.balance = newBalance;
 
+  // ── Sync into Bills and Budget for the month this payment falls in ──
+  // The payment date determines which month's budget gets the actual logged.
+  const paymentDate = new Date(date + 'T00:00:00');
+  const payYear = paymentDate.getFullYear();
+  const payMonth = paymentDate.getMonth();
+
+  // Make sure the linked bill exists/updates (syncDebtsToBills also runs on renderDebt,
+  // but we call it here too so it's current before we touch the budget month)
+  syncDebtsToBills();
+  const linkedBill = data.bills.find(b => b.fromDebt === d.name);
+
+  if(linkedBill) {
+    const mb = getBudgetForMonth(payYear, payMonth);
+    let row = mb.expenses.find(e => e.fromBill === linkedBill.name);
+    if(row) {
+      row.actual = payment; // mark this month's actual as paid with the real payment amount
+    }
+  }
+
   triggerAutosave();
   closePaymentModal();
   renderDebt();
   checkDebtMilestones();
-  showToast(`✓ Payment of ${fmt(payment)} logged on ${d.name}`);
+
+  // If we're currently viewing the same month the payment was logged for, refresh Budget too
+  if(payYear === getGlobalYear() && payMonth === getGlobalMonth()) {
+    const budgetPage = document.getElementById('page-budget');
+    if(budgetPage && budgetPage.classList.contains('active')) renderBudget();
+  }
+
+  showToast(`✓ Payment of ${fmt(payment)} logged on ${d.name} — marked paid in Bills & Budget`);
 }
 
 function renderPaymentHistory(i) {
