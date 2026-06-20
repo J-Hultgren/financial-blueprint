@@ -1053,6 +1053,7 @@
   body.dark-mode .badge.green { background:#1A1A2D; color:var(--sage); }
   body.dark-mode .badge.terra { background:#2A1A10; color:var(--rose-light); }
   body.dark-mode .whatif-result { background:#1A1A2D; border-color:var(--sage); }
+  body.dark-mode #dash-insight { background:#241A30; border-color:#5A4070; color:#E8A4B8; }
   body.dark-mode .payment-history-item { border-color:#5A4070; }
   body.dark-mode .payment-history-date { color:#7A6A8A; }
   body.dark-mode .payment-history-principal { color:var(--sage); }
@@ -1576,6 +1577,8 @@
       <button class="review-cta" onclick="showPage('budget', document.querySelector('[onclick*=budget]'))">Review Budget →</button>
     </div>
 
+    <div id="dash-insight" style="display:none;font-size:13px;color:var(--mauve);background:var(--mauve-faint);border:1px solid var(--mauve-light);border-radius:10px;padding:10px 16px;margin-bottom:24px;text-align:center"></div>
+
     <div class="kpi-grid">
       <div class="kpi-card terra">
         <div class="kpi-label">Total Debt</div>
@@ -1686,22 +1689,41 @@
       </div>
     </div>
 
-    <div class="kpi-grid" style="grid-template-columns:repeat(4,1fr);margin-bottom:20px">
-      <div class="kpi-card sage">
-        <div class="kpi-label">Total Income</div>
-        <div class="kpi-value positive" id="b-income">$0</div>
-      </div>
-      <div class="kpi-card terra">
-        <div class="kpi-label">Total Expenses</div>
-        <div class="kpi-value" id="b-expenses">$0</div>
-      </div>
-      <div class="kpi-card sage">
-        <div class="kpi-label">Cashflow</div>
-        <div class="kpi-value positive" id="b-cashflow">$0</div>
-      </div>
-      <div class="kpi-card brown">
-        <div class="kpi-label">Savings Rate</div>
-        <div class="kpi-value positive" id="b-rate">—</div>
+    <!-- Clear Planned vs Actual summary -->
+    <div class="card" style="margin-bottom:20px">
+      <div class="card-title">This Month at a Glance</div>
+      <table style="width:100%;border-collapse:collapse">
+        <thead>
+          <tr style="border-bottom:1px solid var(--linen)">
+            <th style="text-align:left;padding:8px 4px;font-size:10px;text-transform:uppercase;letter-spacing:.06em;color:var(--light)"></th>
+            <th style="text-align:right;padding:8px 4px;font-size:10px;text-transform:uppercase;letter-spacing:.06em;color:var(--light)">Planned</th>
+            <th style="text-align:right;padding:8px 4px;font-size:10px;text-transform:uppercase;letter-spacing:.06em;color:var(--light)">Actual so far</th>
+            <th style="text-align:right;padding:8px 4px;font-size:10px;text-transform:uppercase;letter-spacing:.06em;color:var(--light)">Difference</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr style="border-bottom:1px solid var(--linen)">
+            <td style="padding:10px 4px;font-size:13px;font-weight:600;color:var(--sage)">💰 Monthly Pay</td>
+            <td style="text-align:right;padding:10px 4px;font-family:'Cormorant Garamond',serif;font-size:20px;color:var(--ink)" id="b-income-planned">$0</td>
+            <td style="text-align:right;padding:10px 4px;font-family:'Cormorant Garamond',serif;font-size:20px;font-weight:700;color:var(--sage)" id="b-income-actual">$0</td>
+            <td style="text-align:right;padding:10px 4px;font-size:13px" id="b-income-diff">$0</td>
+          </tr>
+          <tr style="border-bottom:1px solid var(--linen)">
+            <td style="padding:10px 4px;font-size:13px;font-weight:600;color:var(--rose)">🧾 Spending</td>
+            <td style="text-align:right;padding:10px 4px;font-family:'Cormorant Garamond',serif;font-size:20px;color:var(--ink)" id="b-expense-planned">$0</td>
+            <td style="text-align:right;padding:10px 4px;font-family:'Cormorant Garamond',serif;font-size:20px;font-weight:700;color:var(--rose)" id="b-expense-actual">$0</td>
+            <td style="text-align:right;padding:10px 4px;font-size:13px" id="b-expense-diff">$0</td>
+          </tr>
+          <tr>
+            <td style="padding:10px 4px;font-size:13px;font-weight:700;color:var(--ink)">= Left Over</td>
+            <td style="text-align:right;padding:10px 4px;font-family:'Cormorant Garamond',serif;font-size:20px;font-style:italic;color:var(--mid)" id="b-cashflow-planned">$0</td>
+            <td style="text-align:right;padding:10px 4px;font-family:'Cormorant Garamond',serif;font-size:24px;font-weight:700;font-style:italic;color:var(--lavender)" id="b-cashflow">$0</td>
+            <td style="text-align:right;padding:10px 4px;font-size:13px;color:var(--light)" id="b-rate">—</td>
+          </tr>
+        </tbody>
+      </table>
+      <div style="font-size:11px;color:var(--light);margin-top:10px;line-height:1.5">
+        💡 <strong>Planned</strong> = what you set up at the start of the month. <strong>Actual</strong> = real paychecks logged + real spending so far (bills and Daily Expenses sync in automatically). <strong>Left Over</strong> = Actual income minus Actual spending — this is what's truly available right now.
       </div>
     </div>
 
@@ -2688,6 +2710,81 @@ function pregenerateFutureMonths() {
   if(createdAny) triggerAutosave();
 }
 
+// ── DASHBOARD INSIGHT LINE ──────────────────────────────────────
+// A single, honest one-line takeaway — not a notification, not a
+// celebration confetti moment, just a quiet, useful observation.
+// Checked in priority order; only the most relevant one shows.
+// Hidden entirely if nothing meaningful applies yet (e.g. brand new account).
+function renderDashboardInsight({ totalIncome, totalExpenses, actualSpent, totalDebt, netWorth }) {
+  const el = document.getElementById('dash-insight');
+  if(!el) return;
+
+  const candidates = [];
+
+  // Spending pace vs plan, only meaningful once some money has moved
+  if(totalExpenses > 0 && actualSpent > 0) {
+    const pctOfPlanned = actualSpent / totalExpenses;
+    const now = new Date();
+    const dayOfMonth = now.getDate();
+    const daysInMonth = new Date(now.getFullYear(), now.getMonth()+1, 0).getDate();
+    const pctOfMonthElapsed = dayOfMonth / daysInMonth;
+
+    if(pctOfPlanned < pctOfMonthElapsed - 0.1) {
+      candidates.push({ priority: 2, text: `You're tracking under budget this month — ${Math.round(pctOfPlanned*100)}% spent with ${Math.round((1-pctOfMonthElapsed)*100)}% of the month left.` });
+    } else if(pctOfPlanned > pctOfMonthElapsed + 0.15) {
+      candidates.push({ priority: 2, text: `Spending is ahead of plan this month — you're at ${Math.round(pctOfPlanned*100)}% of budget with ${Math.round((1-pctOfMonthElapsed)*100)}% of the month still to go.` });
+    }
+  }
+
+  // Net worth trend, compares this month's snapshot to last month's
+  if(data.networthHistory && data.networthHistory.length >= 2) {
+    const sorted = [...data.networthHistory].sort((a,b) => {
+      const ay = a.year||2025, by = b.year||2025;
+      if(ay !== by) return ay - by;
+      return MONTHS_SHORT.indexOf(a.month) - MONTHS_SHORT.indexOf(b.month);
+    });
+    const last = sorted[sorted.length-1];
+    const prev = sorted[sorted.length-2];
+    if(last && prev) {
+      const change = last.value - prev.value;
+      if(change > 0) {
+        candidates.push({ priority: 3, text: `Your net worth grew by ${fmt(change)} since last month.` });
+      } else if(change < -100) {
+        candidates.push({ priority: 1, text: `Net worth dipped by ${fmt(Math.abs(change))} since last month — worth a look at what shifted.` });
+      }
+    }
+  }
+
+  // Debt payoff momentum — only if a payment was logged recently
+  const recentlyPaidDebts = data.debts.filter(d => (d.payments||[]).length > 0);
+  if(recentlyPaidDebts.length > 0) {
+    const totalPaidDown = recentlyPaidDebts.reduce((sum, d) => {
+      const lastPayment = d.payments[0];
+      return sum + (lastPayment?.principal || 0);
+    }, 0);
+    if(totalPaidDown > 0) {
+      candidates.push({ priority: 4, text: `Your last debt payments put ${fmt(totalPaidDown)} toward principal — that's real progress.` });
+    }
+  }
+
+  // Savings goals close to a milestone
+  const closeGoals = data.goals.filter(g => g.target > 0 && (g.saved/g.target) >= 0.45 && (g.saved/g.target) < 1);
+  if(closeGoals.length > 0) {
+    const g = closeGoals[0];
+    const pct = Math.round((g.saved/g.target)*100);
+    candidates.push({ priority: 5, text: `${g.icon || ''} "${g.name}" is ${pct}% funded — getting close.` });
+  }
+
+  if(candidates.length === 0) {
+    el.style.display = 'none';
+    return;
+  }
+
+  candidates.sort((a,b) => a.priority - b.priority);
+  el.textContent = '💭 ' + candidates[0].text;
+  el.style.display = 'block';
+}
+
 function getMonthlyChartData() {
   const shortMonths = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
   const yp = document.getElementById('yearPicker');
@@ -2737,11 +2834,18 @@ function renderDashboard() {
   document.getElementById('dash-remaining').textContent = fmt(totalIncome - actualSpent);
   document.getElementById('donut-pct').textContent = Math.round(totalExpenses/totalIncome*100)+'%';
 
-  // Budget legend
-  const topCats = data.expenses.slice(0,5);
-  document.getElementById('budget-legend').innerHTML = topCats.map(e=>
-    `<div style="display:flex;justify-content:space-between"><span>${e.cat.split('—')[0].trim()}</span><span style="font-weight:500;color:var(--ink)">${fmt(e.actual)}</span></div>`
-  ).join('');
+  renderDashboardInsight({ totalIncome, totalExpenses, actualSpent, totalDebt, netWorth });
+
+  // Budget legend — top 5 categories by actual spend this month, not array order
+  const topCats = [...data.expenses]
+    .filter(e => e.actual > 0)
+    .sort((a,b) => b.actual - a.actual)
+    .slice(0,5);
+  document.getElementById('budget-legend').innerHTML = topCats.length
+    ? topCats.map(e=>
+        `<div style="display:flex;justify-content:space-between"><span>${e.cat.split('—')[0].trim()}</span><span style="font-weight:500;color:var(--ink)">${fmt(e.actual)}</span></div>`
+      ).join('')
+    : `<div style="color:var(--light);font-size:11px">No spending logged yet this month</div>`;
 
   // Budget donut
   destroyChart('budgetDonut');
@@ -2772,15 +2876,21 @@ function renderDashboard() {
     options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{labels:{font:{family:'DM Sans'},color:chartText(),boxWidth:10,padding:12}}},scales:{x:{grid:{display:false},ticks:{font:{family:'Inter',size:10},color:chartMuted(),maxRotation:0}},y:{grid:{color:chartGrid()},ticks:{callback:v=>fmt(v),font:{family:'Inter',size:10},color:chartMuted()}}}}
   });
 
-  // Bills preview
-  const billHtml = data.bills.slice(0,5).map(b=>`
-    <div class="bill-item">
-      <div><span class="bill-status ${parseInt(b.due)<10?'due-soon':'upcoming'}"></span>
-        <span class="bill-name">${b.name}</span>
-        <div style="padding-left:16px"><span class="bill-due">Due ${b.due}</span></div>
-      </div>
-      <span class="bill-amount">${fmt(b.amount)}</span>
-    </div>`).join('');
+  // Bills preview — the 5 soonest upcoming, sorted by due date, not array order
+  const upcomingBills = [...data.bills]
+    .filter(b => b.amount > 0)
+    .sort((a,b) => dueDateNum(a.due) - dueDateNum(b.due))
+    .slice(0,5);
+  const billHtml = upcomingBills.length
+    ? upcomingBills.map(b=>`
+        <div class="bill-item">
+          <div><span class="bill-status ${dueDateNum(b.due)<=10?'due-soon':'upcoming'}"></span>
+            <span class="bill-name">${b.name}</span>
+            <div style="padding-left:16px"><span class="bill-due">Due ${b.due}</span></div>
+          </div>
+          <span class="bill-amount">${fmt(b.amount)}</span>
+        </div>`).join('')
+    : `<div style="color:var(--light);font-size:12px;padding:8px 0">No bills entered yet</div>`;
   document.getElementById('dash-bills').innerHTML = billHtml;
 
   // Debt line
@@ -2882,6 +2992,26 @@ function budgetKey(y, m) {
   return `${y}-${String(m+1).padStart(2,'0')}`;
 }
 
+// Pulls actual spending from the Daily Expenses log into this month's budget.
+// Matches by category name AND by month (transaction date must fall within
+// the budget month being viewed). Bill-linked rows are skipped — those sync
+// from Bills instead, never from daily transactions, to avoid double-counting
+// (e.g. a mortgage payment shouldn't also count toward "Household" spending).
+function syncExpensesIntoBudgetMonth(mb, y, m) {
+  if(!data.transactions) return;
+  const monthKey = `${y}-${String(m+1).padStart(2,'0')}`;
+  const monthTransactions = data.transactions.filter(t => t.date && t.date.startsWith(monthKey));
+
+  mb.expenses.forEach(row => {
+    if(row.fromBill) return; // bill-linked rows are not touched by daily expenses
+    const catTotal = monthTransactions
+      .filter(t => t.cat === row.cat)
+      .reduce((sum, t) => sum + (t.amount || 0), 0);
+    row.actual = catTotal;
+    row.fromExpenses = catTotal > 0; // tag for the link badge, only when there's something to show
+  });
+}
+
 function getBudgetForMonth(y, m) {
   const key = budgetKey(y, m);
   if(!data.monthlyBudgets) data.monthlyBudgets = {};
@@ -2901,6 +3031,9 @@ function getBudgetForMonth(y, m) {
 
   // Always pull recurring bills into expenses as planned amounts (auto-populated, editable actuals)
   syncBillsIntoBudgetMonth(data.monthlyBudgets[key]);
+
+  // Always pull actual variable spending from Daily Expenses for this month
+  syncExpensesIntoBudgetMonth(data.monthlyBudgets[key], y, m);
 
   return data.monthlyBudgets[key];
 }
@@ -3055,20 +3188,25 @@ function renderBudget() {
       <div class="alert-bar"><div class="alert-fill ${alert.status}" style="width:${Math.round(alert.pct*100)}%"></div></div>
       <span class="alert-badge ${alert.status}">${alert.label}</span>` : '';
     const isFromBill = !!r.fromBill;
+    const isFromExpenses = !isFromBill && getExpenseCats().includes(r.cat);
     const linkBadge = isFromBill
       ? `<span style="font-size:9px;color:var(--mauve);background:var(--mauve-faint);padding:1px 6px;border-radius:99px;margin-left:6px;white-space:nowrap">🔗 from Bills</span>`
-      : '';
+      : isFromExpenses
+      ? `<span style="font-size:9px;color:var(--rose);background:var(--rose-faint);padding:1px 6px;border-radius:99px;margin-left:6px;white-space:nowrap">🔗 from Expenses</span>`
+      : `<span style="font-size:9px;color:var(--light);background:var(--linen);padding:1px 6px;border-radius:99px;margin-left:6px;white-space:nowrap" title="This category name doesn't match any Daily Expenses category, so actual spending won't auto-fill. Rename it to match, or enter actuals manually.">⚠ not synced</span>`;
     return `<tr>
       <td>
         <input class="editable" value="${r.cat}" ${isFromBill ? 'readonly title="Linked to a bill — edit on the Bills tab"' : ''}
-          onchange="getBudgetForMonth(${budgetYear},${budgetMonth}).expenses[${i}].cat=this.value"
+          onchange="getBudgetForMonth(${budgetYear},${budgetMonth}).expenses[${i}].cat=this.value;renderBudget()"
           style="${isFromBill ? 'opacity:0.8' : ''}">
         ${linkBadge}${alertHtml}
       </td>
       <td>${isFromBill
         ? `<span style="display:block;text-align:right;color:var(--mid)">${fmt(r.planned)}</span>`
         : curInput(r.planned, `getBudgetForMonth(${budgetYear},${budgetMonth}).expenses[${i}].planned=raw;calcBudget()`)}</td>
-      <td>${curInput(r.actual, `getBudgetForMonth(${budgetYear},${budgetMonth}).expenses[${i}].actual=raw;calcBudget()`)}</td>
+      <td>${(isFromBill || isFromExpenses)
+        ? `<span style="display:block;text-align:right;color:var(--mid)" title="Auto-totaled from ${isFromBill ? 'Bills' : 'Daily Expenses'} — edit there to change it">${fmt(r.actual)}</span>`
+        : curInput(r.actual, `getBudgetForMonth(${budgetYear},${budgetMonth}).expenses[${i}].actual=raw;calcBudget()`)}</td>
       <td style="text-align:right;color:${r.planned-r.actual>=0?'var(--sage)':'var(--rose)'}">${fmt(r.planned-r.actual)}</td>
       <td>${isFromBill ? '' : delBtn(`deleteExpenseRow(${i})`)}</td>
     </tr>`;
@@ -3098,16 +3236,33 @@ function calcBudget() {
   const ia = mb.income.reduce((a,r)=>a+r.actual,0);
   const ep = mb.expenses.reduce((a,r)=>a+r.planned,0);
   const ea = mb.expenses.reduce((a,r)=>a+r.actual,0);
+
   document.getElementById('income-planned-total').textContent = fmt(ip);
   document.getElementById('income-actual-total').textContent = fmt(ia);
   document.getElementById('income-diff-total').textContent = fmt(ia-ip);
   document.getElementById('expense-planned-total').textContent = fmt(ep);
   document.getElementById('expense-actual-total').textContent = fmt(ea);
   document.getElementById('expense-diff-total').textContent = fmt(ep-ea);
-  document.getElementById('b-income').textContent = fmt(ia);
-  document.getElementById('b-expenses').textContent = fmt(ea);
-  document.getElementById('b-cashflow').textContent = fmt(ia-ea);
-  document.getElementById('b-rate').textContent = ia>0 ? Math.round((ia-ea)/ia*100)+'%' : '—';
+
+  // "This Month at a Glance" summary — explicit Planned vs Actual vs Left Over
+  document.getElementById('b-income-planned').textContent = fmt(ip);
+  document.getElementById('b-income-actual').textContent = fmt(ia);
+  const incDiff = document.getElementById('b-income-diff');
+  incDiff.textContent = (ia>=ip?'+':'') + fmt(ia-ip);
+  incDiff.style.color = ia>=ip ? 'var(--sage)' : 'var(--rose)';
+
+  document.getElementById('b-expense-planned').textContent = fmt(ep);
+  document.getElementById('b-expense-actual').textContent = fmt(ea);
+  const expDiff = document.getElementById('b-expense-diff');
+  expDiff.textContent = (ea<=ep?'−':'+') + fmt(Math.abs(ep-ea));
+  expDiff.style.color = ea<=ep ? 'var(--sage)' : 'var(--rose)';
+
+  document.getElementById('b-cashflow-planned').textContent = fmt(ip-ep);
+  const cashflowActual = ia-ea;
+  const cfEl = document.getElementById('b-cashflow');
+  cfEl.textContent = fmt(cashflowActual);
+  cfEl.style.color = cashflowActual >= 0 ? 'var(--lavender)' : 'var(--rose)';
+  document.getElementById('b-rate').textContent = ia>0 ? `${Math.round((cashflowActual)/ia*100)}% saved` : '—';
 
   // Also sync dashboard budget refs to current month
   data.income = mb.income;
@@ -3176,7 +3331,7 @@ function displayToISO(display) {
 function catSelectHtml(selectedCat, idx) {
   const cats = getExpenseCats();
   const opts = cats.map(c=>`<option value="${c}" ${c===selectedCat?'selected':''}>${c}</option>`).join('');
-  return `<select class="cat-select" onchange="data.transactions[${idx}].cat=this.value;renderExpenses();triggerAutosave()"
+  return `<select class="cat-select" onchange="data.transactions[${idx}].cat=this.value;renderExpenses();triggerAutosave();refreshBudgetIfActive()"
     style="font-family:'Inter',sans-serif;font-size:13px;color:var(--ink);background:var(--cream);border:1px solid var(--linen);border-radius:5px;padding:4px 6px;outline:none;cursor:pointer;width:100%;max-width:160px">
     ${opts}
   </select>`;
@@ -3253,11 +3408,11 @@ function renderExpenses() {
     <td>
       <input type="date" value="${t.date || todayISO()}"
         style="font-family:'Inter',sans-serif;font-size:12px;color:var(--ink);background:var(--cream);border:1px solid var(--linen);border-radius:5px;padding:4px 6px;outline:none;cursor:pointer;width:140px"
-        onchange="data.transactions[${i}].date=this.value;triggerAutosave()">
+        onchange="data.transactions[${i}].date=this.value;triggerAutosave();refreshBudgetIfActive()">
     </td>
     <td><input class="editable" value="${t.desc||''}" placeholder="Description" onchange="data.transactions[${i}].desc=this.value;triggerAutosave()"></td>
     <td>${catSelectHtml(t.cat, i)}</td>
-    <td>${curInput(t.amount, `data.transactions[${i}].amount=raw;renderExpenses()`)}</td>
+    <td>${curInput(t.amount, `data.transactions[${i}].amount=raw;renderExpenses();refreshBudgetIfActive()`)}</td>
     <td>${paidWithSelect(t.paid, i)}</td>
     <td>
       <button onclick="deleteTransaction(${i})"
@@ -3265,6 +3420,16 @@ function renderExpenses() {
         title="Delete" onmouseover="this.style.color='var(--rose)'" onmouseout="this.style.color='var(--light)'">×</button>
     </td>
   </tr>`).join('');
+}
+
+// Re-renders Budget if it's currently the visible page, so editing Daily
+// Expenses while Budget is open (e.g. on a second monitor/tab) stays live.
+// Most of the time Budget just re-syncs naturally next time you open it,
+// since getBudgetForMonth() always re-pulls from transactions — this just
+// makes it feel instant if both are open at once.
+function refreshBudgetIfActive() {
+  const budgetPage = document.getElementById('page-budget');
+  if(budgetPage && budgetPage.classList.contains('active')) renderBudget();
 }
 
 function addTransaction() {
@@ -3278,6 +3443,7 @@ function deleteTransaction(i) {
   data.transactions.splice(i, 1);
   renderExpenses();
   triggerAutosave();
+  refreshBudgetIfActive();
 }
 
 
@@ -3507,11 +3673,21 @@ function renderGoals() {
   grid.innerHTML = data.goals.map((g,i)=>{
     const pct = g.target>0 ? Math.min(1,g.saved/g.target) : 0;
     const monthsLeft = g.target>g.saved ? 'Enter monthly contribution to see timeline' : '✅ Done!';
+
+    // Simple milestone badge — quiet, not a popup or animation, just a tasteful marker
+    let milestoneBadge = '';
+    if(pct >= 1) {
+      milestoneBadge = `<span style="display:inline-flex;align-items:center;gap:4px;background:var(--sage-faint);border:1px solid var(--sage-light);color:var(--sage);border-radius:99px;padding:3px 10px;font-size:10px;font-weight:600;margin-bottom:8px">✓ Goal reached</span>`;
+    } else if(pct >= 0.5) {
+      milestoneBadge = `<span style="display:inline-flex;align-items:center;gap:4px;background:var(--rose-faint);border:1px solid var(--rose-light);color:var(--rose);border-radius:99px;padding:3px 10px;font-size:10px;font-weight:600;margin-bottom:8px">Halfway there</span>`;
+    }
+
     return `<div class="goal-card" style="position:relative">
       <button onclick="deleteGoal(${i})" title="Remove goal"
         style="position:absolute;top:10px;right:10px;background:none;border:none;cursor:pointer;color:var(--light);font-size:16px;padding:2px 6px;border-radius:4px;line-height:1"
         onmouseover="this.style.color='var(--rose)'" onmouseout="this.style.color='var(--light)'">×</button>
       <div class="goal-icon">${g.icon}</div>
+      ${milestoneBadge ? `<div>${milestoneBadge}</div>` : ''}
       <div class="goal-name"><input class="editable" value="${g.name}" style="font-weight:600;font-size:14px;border-bottom:1px dashed var(--mauve-light);padding:1px 2px;width:100%" onchange="data.goals[${i}].name=this.value;triggerAutosave()" onfocus="this.style.borderBottomColor='var(--rose)'" onblur="this.style.borderBottomColor='var(--mauve-light)'"></div>
       <div class="goal-target">Target: ${curInputInline(g.target, `data.goals[${i}].target=raw;renderGoals()`)}</div>
       <div class="goal-saved">${fmt(g.saved)}</div>
@@ -3610,6 +3786,20 @@ function calcNetworth() {
   document.getElementById('assets-total').textContent = fmt(ta);
   document.getElementById('liabilities-total').textContent = fmt(tl);
   document.getElementById('kpi-networth').textContent = fmt(nw);
+
+  // Keep this month's net worth history point current as numbers change,
+  // without re-rendering (avoids a render loop with renderNetworth)
+  if(ta > 0 || tl > 0) {
+    const now = new Date();
+    const shortMonths=['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+    const monthKey = shortMonths[now.getMonth()];
+    const year = now.getFullYear();
+    if(!data.networthHistory) data.networthHistory = [];
+    let entry = data.networthHistory.find(h => h.month===monthKey && h.year===year);
+    if(entry) entry.value = nw;
+    else data.networthHistory.push({month:monthKey, year, value:nw});
+  }
+
   triggerAutosave();
   checkDebtMilestones();
 }
@@ -4281,26 +4471,38 @@ function loadImport(input) {
 }
 
 // ── NET WORTH AUTO-SNAPSHOT ────────────────────────────────────
+// Keeps this month's net worth snapshot current every time the app loads —
+// updates the existing entry for the current month rather than writing it
+// once and never touching it again. This means the chart always reflects
+// your latest numbers, and only past months stay frozen in history.
 function autoSnapshotNetWorth() {
   const now = new Date();
   const shortMonths=['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
   const monthKey = shortMonths[now.getMonth()];
   const year = now.getFullYear();
-  const lastSnap = localStorage.getItem('lastNWSnap');
-  const thisMonth = `${year}-${now.getMonth()}`;
-  if(lastSnap === thisMonth) return; // already snapped this month
 
   const assets = data.assets.reduce((a,x)=>a+x.value,0);
   const liab = data.debts.reduce((a,x)=>a+x.balance,0);
   const nw = assets - liab;
-  if(nw === 0) return; // don't snap empty data
 
   const existing = data.networthHistory.find(h=>h.month===monthKey && h.year===year);
-  if(!existing) {
+  if(existing) {
+    if(existing.value !== nw) {
+      existing.value = nw;
+      triggerAutosave();
+    }
+  } else if(assets > 0 || liab > 0) {
+    // Only create a new entry once there's real data — avoids littering
+    // history with $0 months before the person has entered anything
     data.networthHistory.push({month:monthKey, year, value:nw});
-    localStorage.setItem('lastNWSnap', thisMonth);
     triggerAutosave();
   }
+
+  // Refresh the chart immediately if Net Worth or Dashboard is open
+  const nwPage = document.getElementById('page-networth');
+  const dashPage = document.getElementById('page-dashboard');
+  if(nwPage && nwPage.classList.contains('active')) renderNetworth();
+  if(dashPage && dashPage.classList.contains('active')) renderDashboard();
 }
 
 // ── CHECK DEBT PAID OFF (CONFETTI) ────────────────────────────
