@@ -1361,15 +1361,6 @@
       <span class="nav-icon">📈</span> Net Worth
     </div>
     <div class="nav-section-label">Review</div>
-    <div class="nav-item" onclick="showPage('reports', this)">
-      <span class="nav-icon">◉</span> Reports
-    </div>
-    <div class="nav-item" onclick="showPage('whatif', this)">
-      <span class="nav-icon">🔮</span> What-If
-    </div>
-    <div class="nav-item" onclick="showPage('billcal', this)">
-      <span class="nav-icon">🗓</span> Bill Calendar
-    </div>
     <div class="nav-item" onclick="showPage('settings', this)">
       <span class="nav-icon">⚙</span> Settings
     </div>
@@ -1611,7 +1602,7 @@
     <div class="chart-grid">
       <!-- Budget donut -->
       <div class="card">
-        <div class="card-title">Budget Summary <a onclick="showPage('budget', document.querySelectorAll('.nav-item')[1])">View Budget →</a></div>
+        <div class="card-title">Budget Summary <a onclick="showPage('budget', document.querySelector('[onclick*=budget]'))">View Budget →</a></div>
         <div class="donut-wrap">
           <canvas id="budgetDonut"></canvas>
           <div class="donut-center">
@@ -1624,7 +1615,7 @@
 
       <!-- Income vs Expense bar -->
       <div class="card">
-        <div class="card-title">Income & Expense Overview <a onclick="showPage('reports', document.querySelectorAll('.nav-item')[7])">View Reports →</a></div>
+        <div class="card-title">Income & Expense Overview <a onclick="showPage('settings', document.querySelector('[onclick*=settings]'))">View Annual History →</a></div>
         <div class="chart-container" style="height:180px">
           <canvas id="incomeExpenseBar"></canvas>
         </div>
@@ -1632,7 +1623,7 @@
 
       <!-- Bill tracker -->
       <div class="card">
-        <div class="card-title">Bill Tracker <a onclick="showPage('bills', document.querySelectorAll('.nav-item')[3])">View All Bills →</a></div>
+        <div class="card-title">Bill Tracker <a onclick="showPage('bills', document.querySelector('[onclick*=bills]'))">View All Bills →</a></div>
         <div class="bill-list" id="dash-bills"></div>
       </div>
     </div>
@@ -1640,7 +1631,7 @@
     <div class="chart-grid">
       <!-- Debt preview -->
       <div class="card">
-        <div class="card-title">Debt Payoff Preview <a onclick="showPage('debt', document.querySelectorAll('.nav-item')[4])">View Debt Plan →</a></div>
+        <div class="card-title">Debt Payoff Preview <a onclick="showPage('debt', document.querySelector('[onclick*=debt]'))">View Debt Plan →</a></div>
         <div style="margin-bottom:12px">
           <div style="font-size:11px;color:var(--light)">Total remaining</div>
           <div style="font-family:'Playfair Display',serif;font-size:26px;color:var(--rose)" id="debt-total-card">$50,700</div>
@@ -1653,13 +1644,13 @@
 
       <!-- Goals -->
       <div class="card">
-        <div class="card-title">Savings Goals <a onclick="showPage('goals', document.querySelectorAll('.nav-item')[5])">View All Goals →</a></div>
+        <div class="card-title">Savings Goals <a onclick="showPage('goals', document.querySelector('[onclick*=goals]'))">View All Goals →</a></div>
         <div id="dash-goals"></div>
       </div>
 
       <!-- Net worth -->
       <div class="card">
-        <div class="card-title">Net Worth Over Time <a onclick="showPage('networth', document.querySelectorAll('.nav-item')[6])">View Net Worth →</a></div>
+        <div class="card-title">Net Worth Over Time <a onclick="showPage('networth', document.querySelector('[onclick*=networth]'))">View Net Worth →</a></div>
         <div style="font-size:11px;color:var(--light)">Current net worth</div>
         <div class="nw-big" id="kpi-networth">$74,150</div>
         <div class="chart-container" style="height:110px">
@@ -1835,15 +1826,47 @@
         <div class="kpi-value" id="bills-count">0</div>
       </div>
     </div>
-    <div class="card">
-      <div class="card-title">Recurring Bills</div>
-      <table class="data-table">
-        <thead><tr>
-          <th>Bill</th><th>Due Date</th><th style="text-align:right">Amount</th><th>Frequency</th><th>Auto-Pay</th><th>Account</th><th></th>
-        </tr></thead>
-        <tbody id="bills-body"></tbody>
-      </table>
-      <button class="add-row-btn" onclick="addBill()">+ Add bill</button>
+
+    <!-- View toggle: List or Calendar -->
+    <div style="display:flex;gap:8px;margin-bottom:16px">
+      <button id="bills-view-list-btn" onclick="setBillsView('list')" style="padding:7px 16px;border-radius:99px;border:1px solid var(--rose-light);background:var(--rose);color:white;font-size:12px;font-weight:600;cursor:pointer;font-family:'DM Sans',sans-serif">☰ List</button>
+      <button id="bills-view-cal-btn" onclick="setBillsView('calendar')" style="padding:7px 16px;border-radius:99px;border:1px solid var(--linen);background:var(--cream);color:var(--mid);font-size:12px;font-weight:600;cursor:pointer;font-family:'DM Sans',sans-serif">🗓 Calendar</button>
+    </div>
+
+    <!-- LIST VIEW -->
+    <div id="bills-list-view">
+      <div class="card">
+        <div class="card-title">Recurring Bills <span style="font-size:10px;color:var(--light);font-weight:400;text-transform:none;letter-spacing:0">— sorted by due date</span></div>
+        <table class="data-table">
+          <thead><tr>
+            <th>Bill</th><th>Due Date</th><th style="text-align:right">Amount</th><th>Frequency</th><th>Auto-Pay</th><th>Account</th><th></th>
+          </tr></thead>
+          <tbody id="bills-body"></tbody>
+        </table>
+        <button class="add-row-btn" onclick="addBill()">+ Add bill</button>
+      </div>
+    </div>
+
+    <!-- CALENDAR VIEW -->
+    <div id="bills-calendar-view" style="display:none">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px">
+        <button onclick="shiftBillCalMonth(-1)" style="background:var(--linen);border:none;border-radius:8px;padding:8px 14px;cursor:pointer;font-size:16px">‹</button>
+        <div style="font-family:'Playfair Display',serif;font-size:18px;color:var(--ink)" id="billcal-title"></div>
+        <button onclick="shiftBillCalMonth(1)" style="background:var(--linen);border:none;border-radius:8px;padding:8px 14px;cursor:pointer;font-size:16px">›</button>
+      </div>
+      <div class="card" style="margin-bottom:16px">
+        <div class="cal-grid" id="billcal-grid"></div>
+      </div>
+      <div class="kpi-grid" style="grid-template-columns:repeat(2,1fr)">
+        <div class="kpi-card sage">
+          <div class="kpi-label">Bills in First Half</div>
+          <div class="kpi-value" id="billcal-first">$0</div>
+        </div>
+        <div class="kpi-card brown">
+          <div class="kpi-label">Bills in Second Half</div>
+          <div class="kpi-value" id="billcal-second">$0</div>
+        </div>
+      </div>
     </div>
   </div>
 
@@ -1896,6 +1919,81 @@
         <canvas id="debtPayoffChart"></canvas>
       </div>
     </div>
+
+    <!-- What-If Calculator — folded in here instead of a separate tab -->
+    <div class="card" style="margin-top:16px">
+      <div class="card-title" style="cursor:pointer" onclick="toggleWhatIf()">
+        🔮 What-If: Extra Payments
+        <span id="whatif-toggle-icon" style="float:right;font-size:14px;color:var(--mauve)">▾ Show</span>
+      </div>
+      <div id="whatif-section" style="display:none;margin-top:12px">
+        <div class="section-sub" style="margin-bottom:16px">See exactly how much extra payments save you in time and interest.</div>
+        <div class="two-col" style="margin-bottom:16px">
+          <div class="card">
+            <div class="card-title">Extra Monthly Payment</div>
+            <div style="margin-bottom:12px">
+              <div style="display:flex;justify-content:space-between;margin-bottom:8px">
+                <span style="font-size:13px;color:var(--mid)">Extra per month</span>
+                <span style="font-family:'Playfair Display',serif;font-size:22px;color:var(--sage)" id="wi-extra-label">$0</span>
+              </div>
+              <input type="range" class="whatif-slider" id="wi-slider" min="0" max="2000" step="25" value="0" oninput="updateWhatIf()">
+              <div style="display:flex;justify-content:space-between;font-size:10px;color:var(--light);margin-top:4px"><span>$0</span><span>$2,000</span></div>
+            </div>
+            <div style="margin-top:16px">
+              <label style="font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:.06em;color:var(--light);display:block;margin-bottom:6px">Or enter a specific amount</label>
+              <input type="number" id="wi-manual" placeholder="e.g. 350" min="0" max="9999"
+                style="width:100%;padding:10px 12px;border:1px solid var(--linen);border-radius:8px;font-family:'Inter',sans-serif;font-size:14px;background:var(--cream);color:var(--ink);outline:none"
+                oninput="document.getElementById('wi-slider').value=this.value||0;updateWhatIf()">
+            </div>
+          </div>
+          <div class="card">
+            <div class="card-title">Which Debt Gets the Extra?</div>
+            <div id="wi-debt-select" style="display:flex;flex-direction:column;gap:8px"></div>
+            <div style="margin-top:12px;padding-top:12px;border-top:1px solid var(--linen)">
+              <label style="font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:.06em;color:var(--light);display:block;margin-bottom:6px">Strategy</label>
+              <select id="wi-strategy" onchange="updateWhatIf()"
+                style="width:100%;padding:10px;border:1px solid var(--linen);border-radius:8px;font-family:'Inter',sans-serif;font-size:13px;background:var(--cream);outline:none">
+                <option value="avalanche">Avalanche (highest APR first)</option>
+                <option value="snowball">Snowball (lowest balance first)</option>
+                <option value="selected">Apply to selected debt only</option>
+              </select>
+              <div style="font-size:11px;color:var(--light);margin-top:8px;line-height:1.5">
+                This controls <strong>which debt your extra $/month goes toward first</strong> each month, while every debt still gets at least its minimum. Avalanche targets your highest interest rate (usually saves the most overall). Snowball targets your smallest balance (clears individual debts faster, for momentum). The radio button above only matters when "Apply to selected debt only" is chosen.
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="whatif-result" id="wi-result" style="display:none">
+          <div style="font-size:11px;color:var(--mid);text-align:center;margin-bottom:14px;padding-bottom:12px;border-bottom:1px solid var(--rose-light)">
+            Compared against your <strong>current minimums-only plan</strong> — no extra payments, no reordering.
+          </div>
+          <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:20px;text-align:center">
+            <div>
+              <div style="font-size:10px;text-transform:uppercase;letter-spacing:.08em;color:var(--light);margin-bottom:6px">New Payoff Date</div>
+              <div class="whatif-big" id="wi-new-date">—</div>
+              <div style="font-size:11px;color:var(--light);margin-top:4px" id="wi-months-saved"></div>
+            </div>
+            <div>
+              <div style="font-size:10px;text-transform:uppercase;letter-spacing:.08em;color:var(--light);margin-bottom:6px">Interest Saved</div>
+              <div class="whatif-saving" id="wi-interest-saved">—</div>
+              <div style="font-size:11px;color:var(--light);margin-top:4px">vs current plan</div>
+            </div>
+            <div>
+              <div style="font-size:10px;text-transform:uppercase;letter-spacing:.08em;color:var(--light);margin-bottom:6px">Total Extra You'll Pay In</div>
+              <div style="font-family:'Cormorant Garamond',serif;font-size:22px;font-style:italic;color:var(--ink)" id="wi-total-extra">—</div>
+              <div style="font-size:11px;color:var(--light);margin-top:4px">on top of minimums, until payoff</div>
+            </div>
+          </div>
+          <div style="font-size:11px;color:var(--light);text-align:center;margin-top:14px;padding-top:12px;border-top:1px solid var(--rose-light)">
+            💡 The extra you pay in is real money out of pocket each month — the payoff is that it disappears faster <strong>and</strong> costs less in interest than paying only minimums for the same period.
+          </div>
+        </div>
+        <div class="card" style="margin-top:16px">
+          <div class="card-title">Payoff Comparison</div>
+          <div class="chart-container" style="height:220px"><canvas id="wi-chart"></canvas></div>
+        </div>
+      </div>
+    </div>
   </div>
 
   <!-- ══ GOALS ═════════════════════════════════════════════════ -->
@@ -1939,145 +2037,18 @@
         <button class="add-row-btn" onclick="addAsset()">+ Add asset</button>
       </div>
       <div class="card">
-        <div class="card-title">Liabilities — what you owe</div>
+        <div class="card-title">Liabilities — what you owe <span style="font-size:10px;color:var(--light);font-weight:400;text-transform:none;letter-spacing:0">— pulled automatically from Debt Payoff</span></div>
         <table class="data-table">
-          <thead><tr><th>Liability</th><th style="text-align:right">Balance</th><th></th></tr></thead>
+          <thead><tr><th>Liability</th><th style="text-align:right">Balance</th></tr></thead>
           <tbody id="liabilities-body"></tbody>
-          <tfoot><tr class="total-row"><td>Total Liabilities</td><td style="text-align:right" id="liabilities-total">$0</td><td></td></tr></tfoot>
+          <tfoot><tr class="total-row"><td>Total Liabilities</td><td style="text-align:right" id="liabilities-total">$0</td></tr></tfoot>
         </table>
-        <button class="add-row-btn" onclick="addLiability()">+ Add liability</button>
+        <button class="add-row-btn" onclick="showPage('debt',document.querySelector('[onclick*=debt]'))" style="color:var(--mauve)">→ Manage debts on Debt Payoff</button>
       </div>
     </div>
     <div class="card" style="margin-top:16px">
       <div class="card-title">Net Worth Over Time — update monthly</div>
       <div class="chart-container" style="height:200px"><canvas id="networthChart"></canvas></div>
-    </div>
-  </div>
-
-  <!-- ══ REPORTS ════════════════════════════════════════════════ -->
-  <div id="page-reports" class="page">
-    <div class="section-header">
-      <div class="section-title">Reports</div>
-      <div class="section-sub">A year-at-a-glance view of your financial progress.</div>
-    </div>
-    <div class="card" style="margin-bottom:16px">
-      <div class="card-title">Income vs Expenses — Full Year Overview</div>
-      <div class="chart-container" style="height:250px"><canvas id="reportsBar"></canvas></div>
-    </div>
-    <div class="two-col">
-      <div class="card">
-        <div class="card-title">Spending by Category</div>
-        <div class="chart-container" style="height:220px"><canvas id="spendingDonut"></canvas></div>
-      </div>
-      <div class="card">
-        <div class="card-title">Annual Summary</div>
-        <table class="data-table" id="annual-table">
-          <thead><tr><th>Month</th><th style="text-align:right">Income</th><th style="text-align:right">Expenses</th><th style="text-align:right">Cashflow</th></tr></thead>
-          <tbody id="annual-body"></tbody>
-        </table>
-      </div>
-    </div>
-  </div>
-
-  <!-- ══ WHAT-IF CALCULATOR ════════════════════════════════════ -->
-  <div id="page-whatif" class="page">
-    <div class="section-header">
-      <div class="section-title">What-If Calculator</div>
-      <div class="section-sub">See exactly how much extra payments save you in time and interest.</div>
-    </div>
-    <div class="two-col" style="margin-bottom:16px">
-      <div class="card">
-        <div class="card-title">Extra Monthly Payment</div>
-        <div style="margin-bottom:12px">
-          <div style="display:flex;justify-content:space-between;margin-bottom:8px">
-            <span style="font-size:13px;color:var(--mid)">Extra per month</span>
-            <span style="font-family:'Playfair Display',serif;font-size:22px;color:var(--sage)" id="wi-extra-label">$0</span>
-          </div>
-          <input type="range" class="whatif-slider" id="wi-slider" min="0" max="2000" step="25" value="0" oninput="updateWhatIf()">
-          <div style="display:flex;justify-content:space-between;font-size:10px;color:var(--light);margin-top:4px"><span>$0</span><span>$2,000</span></div>
-        </div>
-        <div style="margin-top:16px">
-          <label style="font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:.06em;color:var(--light);display:block;margin-bottom:6px">Or enter a specific amount</label>
-          <input type="number" id="wi-manual" placeholder="e.g. 350" min="0" max="9999"
-            style="width:100%;padding:10px 12px;border:1px solid var(--linen);border-radius:8px;font-family:'Inter',sans-serif;font-size:14px;background:var(--cream);color:var(--ink);outline:none"
-            oninput="document.getElementById('wi-slider').value=this.value||0;updateWhatIf()">
-        </div>
-      </div>
-      <div class="card">
-        <div class="card-title">Which Debt Gets the Extra?</div>
-        <div id="wi-debt-select" style="display:flex;flex-direction:column;gap:8px"></div>
-        <div style="margin-top:12px;padding-top:12px;border-top:1px solid var(--linen)">
-          <label style="font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:.06em;color:var(--light);display:block;margin-bottom:6px">Strategy</label>
-          <select id="wi-strategy" onchange="updateWhatIf()"
-            style="width:100%;padding:10px;border:1px solid var(--linen);border-radius:8px;font-family:'Inter',sans-serif;font-size:13px;background:var(--cream);outline:none">
-            <option value="avalanche">Avalanche (highest APR first)</option>
-            <option value="snowball">Snowball (lowest balance first)</option>
-            <option value="selected">Apply to selected debt only</option>
-          </select>
-          <div style="font-size:11px;color:var(--light);margin-top:8px;line-height:1.5">
-            This controls <strong>which debt your extra ${'$'}/month goes toward first</strong> each month, while every debt still gets at least its minimum. Avalanche targets your highest interest rate (usually saves the most overall). Snowball targets your smallest balance (clears individual debts faster, for momentum). The radio button above only matters when "Apply to selected debt only" is chosen.
-          </div>
-        </div>
-      </div>
-    </div>
-    <div class="whatif-result" id="wi-result" style="display:none">
-      <div style="font-size:11px;color:var(--mid);text-align:center;margin-bottom:14px;padding-bottom:12px;border-bottom:1px solid var(--rose-light)">
-        Compared against your <strong>current minimums-only plan</strong> — no extra payments, no reordering.
-      </div>
-      <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:20px;text-align:center">
-        <div>
-          <div style="font-size:10px;text-transform:uppercase;letter-spacing:.08em;color:var(--light);margin-bottom:6px">New Payoff Date</div>
-          <div class="whatif-big" id="wi-new-date">—</div>
-          <div style="font-size:11px;color:var(--light);margin-top:4px" id="wi-months-saved"></div>
-        </div>
-        <div>
-          <div style="font-size:10px;text-transform:uppercase;letter-spacing:.08em;color:var(--light);margin-bottom:6px">Interest Saved</div>
-          <div class="whatif-saving" id="wi-interest-saved">—</div>
-          <div style="font-size:11px;color:var(--light);margin-top:4px">vs current plan</div>
-        </div>
-        <div>
-          <div style="font-size:10px;text-transform:uppercase;letter-spacing:.08em;color:var(--light);margin-bottom:6px">Total Extra You'll Pay In</div>
-          <div style="font-family:'Cormorant Garamond',serif;font-size:22px;font-style:italic;color:var(--ink)" id="wi-total-extra">—</div>
-          <div style="font-size:11px;color:var(--light);margin-top:4px">on top of minimums, until payoff</div>
-        </div>
-      </div>
-      <div style="font-size:11px;color:var(--light);text-align:center;margin-top:14px;padding-top:12px;border-top:1px solid var(--rose-light)">
-        💡 The extra you pay in is real money out of pocket each month — the payoff is that it disappears faster <strong>and</strong> costs less in interest than paying only minimums for the same period.
-      </div>
-    </div>
-    <div class="card" style="margin-top:16px">
-      <div class="card-title">Payoff Comparison</div>
-      <div class="chart-container" style="height:220px"><canvas id="wi-chart"></canvas></div>
-    </div>
-  </div>
-
-  <!-- ══ BILL CALENDAR ══════════════════════════════════════════ -->
-  <div id="page-billcal" class="page">
-    <div class="section-header">
-      <div class="section-title">Bill Calendar</div>
-      <div class="section-sub">See exactly when your money goes out each month.</div>
-    </div>
-    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px">
-      <button onclick="shiftBillCalMonth(-1)" style="background:var(--linen);border:none;border-radius:8px;padding:8px 14px;cursor:pointer;font-size:16px">‹</button>
-      <div style="font-family:'Playfair Display',serif;font-size:18px;color:var(--ink)" id="billcal-title"></div>
-      <button onclick="shiftBillCalMonth(1)" style="background:var(--linen);border:none;border-radius:8px;padding:8px 14px;cursor:pointer;font-size:16px">›</button>
-    </div>
-    <div class="card" style="margin-bottom:16px">
-      <div class="cal-grid" id="billcal-grid"></div>
-    </div>
-    <div class="kpi-grid" style="grid-template-columns:repeat(3,1fr)">
-      <div class="kpi-card terra">
-        <div class="kpi-label">Total Bills This Month</div>
-        <div class="kpi-value" id="billcal-total">$0</div>
-      </div>
-      <div class="kpi-card sage">
-        <div class="kpi-label">Bills in First Half</div>
-        <div class="kpi-value" id="billcal-first">$0</div>
-      </div>
-      <div class="kpi-card brown">
-        <div class="kpi-label">Bills in Second Half</div>
-        <div class="kpi-value" id="billcal-second">$0</div>
-      </div>
     </div>
   </div>
 
@@ -2148,6 +2119,15 @@
           <button onclick="restoreLocalBackup()" style="padding:10px 16px;border:1px solid var(--mauve-light);border-radius:6px;background:var(--mauve-faint);color:var(--mauve);font-family:'Inter',sans-serif;font-size:13px;cursor:pointer;text-align:left;width:100%">🔄 Restore from local backup</button>
         </div>
       </div>
+    </div>
+
+    <!-- Annual Summary — folded in from the old standalone Reports tab -->
+    <div class="card" style="margin-top:16px">
+      <div class="card-title">Annual Summary — Year-over-Year History</div>
+      <table class="data-table" id="annual-table">
+        <thead><tr><th>Month</th><th style="text-align:right">Income</th><th style="text-align:right">Expenses</th><th style="text-align:right">Cashflow</th></tr></thead>
+        <tbody id="annual-body"></tbody>
+      </table>
     </div>
   </div>
 
@@ -2489,7 +2469,7 @@ function ensureDataFields() {
   if(!data.goals) data.goals = _def.goals;
   if(!data.bills) data.bills = _def.bills;
   if(!data.assets) data.assets = _def.assets;
-  if(!data.liabilities) data.liabilities = _def.liabilities;
+  // liabilities intentionally not restored — derived live from data.debts
   if(!data.transactions) data.transactions = _def.transactions;
   if(!data.networthHistory) data.networthHistory = _def.networthHistory;
   if(!data.monthlyHistory) data.monthlyHistory = _def.monthlyHistory;
@@ -2554,13 +2534,8 @@ const defaultData = {
     {name:'401(k) / IRA', value:42000},
     {name:'Brokerage Account', value:6800},
   ],
-  liabilities: [
-    {name:'Mortgage Balance', value:235000},
-    {name:'Auto Loan', value:12000},
-    {name:'Student Loans', value:22000},
-    {name:'Credit Card Balances', value:8200},
-    {name:'Personal Loan', value:8500},
-  ],
+  // liabilities removed — Net Worth now pulls liabilities live from data.debts,
+  // so debt balances only ever live in one place (Debt Payoff tab).
   transactions: [
     {date:'06/01', desc:'Walmart Groceries', cat:'Groceries', amount:127.43, paid:'Debit'},
     {date:'06/02', desc:'Shell Gas Station', cat:'Transportation', amount:58.20, paid:'Debit'},
@@ -2582,7 +2557,7 @@ if(!data.debts) data.debts = _defaults.debts;
 if(!data.goals) data.goals = _defaults.goals;
 if(!data.bills) data.bills = _defaults.bills;
 if(!data.assets) data.assets = _defaults.assets;
-if(!data.liabilities) data.liabilities = _defaults.liabilities;
+
 if(!data.transactions) data.transactions = _defaults.transactions;
 if(!data.networthHistory) data.networthHistory = _defaults.networthHistory;
 if(!data.monthlyHistory) data.monthlyHistory = _defaults.monthlyHistory;
@@ -2593,9 +2568,9 @@ let charts = {};
 
 // ── NAVIGATION ─────────────────────────────────────────────────
 const pageTitles = {
-  dashboard:'Dashboard', budget:'Budget', expenses:'Daily Expenses',
+  starthere:'Start Here', dashboard:'Dashboard', budget:'Budget', expenses:'Daily Expenses',
   bills:'Bill Tracker', debt:'Debt Payoff', goals:'Savings Goals',
-  networth:'Net Worth', reports:'Reports', settings:'Settings'
+  networth:'Net Worth', settings:'Settings'
 };
 
 function showPage(id, el) {
@@ -2612,14 +2587,11 @@ function renderPage(id) {
   if(id==='dashboard') renderDashboard();
   if(id==='budget') renderBudget();
   if(id==='expenses') renderExpenses();
-  if(id==='bills') renderBills();
-  if(id==='debt') renderDebt();
+  if(id==='bills') { renderBills(); renderBillCalendar(); } // list + calendar both kept current
+  if(id==='debt') { renderDebt(); renderWhatIf(); } // debt table + folded-in what-if calculator
   if(id==='goals') renderGoals();
   if(id==='networth') renderNetworth();
-  if(id==='reports') renderReports();
-  if(id==='whatif') renderWhatIf();
-  if(id==='billcal') renderBillCalendar();
-  if(id==='settings') renderAlertSettings();
+  if(id==='settings') { renderAlertSettings(); renderAnnualSummary(); }
   if(id==='starthere') {} // static page, no render needed
 }
 
@@ -2751,7 +2723,7 @@ function renderDashboard() {
   const totalDebt = data.debts.reduce((a,d)=>a+d.balance,0);
   const rate = totalIncome>0 ? (totalIncome-totalExpenses)/totalIncome : 0;
   const totalAssets = data.assets.reduce((a,x)=>a+x.value,0);
-  const totalLiab = data.liabilities.reduce((a,x)=>a+x.value,0);
+  const totalLiab = totalDebt; // liabilities = total debt, single source of truth
   const netWorth = totalAssets - totalLiab;
 
   document.getElementById('kpi-debt').textContent = fmt(totalDebt);
@@ -3578,12 +3550,18 @@ function renderNetworth() {
     <td>${delBtn(`deleteAsset(${i})`)}</td>
   </tr>`).join('');
 
+  // Liabilities are now 100% auto-pulled from Debt Payoff — no manual entry,
+  // no duplicate data entry. Editing a balance here isn't possible by design;
+  // go to Debt Payoff to change it.
   const lb = document.getElementById('liabilities-body');
-  lb.innerHTML = data.liabilities.map((l,i)=>`<tr>
-    <td><input class="editable" value="${l.name}" onchange="data.liabilities[${i}].name=this.value"></td>
-    <td style="text-align:right">${curInput(l.value, `data.liabilities[${i}].value=raw;calcNetworth()`)}</td>
-    <td>${delBtn(`deleteLiability(${i})`)}</td>
-  </tr>`).join('');
+  if(!data.debts.length) {
+    lb.innerHTML = `<tr><td colspan="2" style="color:var(--light);text-align:center;padding:16px;font-size:12px">No debts entered yet — add them on the Debt Payoff tab and they'll appear here automatically.</td></tr>`;
+  } else {
+    lb.innerHTML = data.debts.map((d) => `<tr>
+      <td style="color:var(--mid)">${d.name} <span style="font-size:9px;color:var(--mauve);background:var(--mauve-faint);padding:1px 6px;border-radius:99px;margin-left:4px">🔗 from Debt Payoff</span></td>
+      <td style="text-align:right;color:var(--mid)">${fmt(d.balance)}</td>
+    </tr>`).join('');
+  }
 
   calcNetworth();
 
@@ -3624,7 +3602,7 @@ function renderNetworth() {
 
 function calcNetworth() {
   const ta = data.assets.reduce((a,x)=>a+x.value,0);
-  const tl = data.liabilities.reduce((a,x)=>a+x.value,0);
+  const tl = data.debts.reduce((a,x)=>a+x.balance,0); // liabilities = total debt, always
   const nw = ta-tl;
   document.getElementById('nw-assets').textContent = fmt(ta);
   document.getElementById('nw-liabilities').textContent = fmt(tl);
@@ -3637,45 +3615,17 @@ function calcNetworth() {
 }
 
 function addAsset() { data.assets.push({name:'New Asset',value:0}); renderNetworth(); }
-function addLiability() { data.liabilities.push({name:'New Liability',value:0}); renderNetworth(); }
 function deleteAsset(i) { data.assets.splice(i,1); renderNetworth(); triggerAutosave(); }
-function deleteLiability(i) { data.liabilities.splice(i,1); renderNetworth(); triggerAutosave(); }
+// addLiability/deleteLiability removed — liabilities are now read-only,
+// auto-synced from Debt Payoff. Manage debts there instead.
 
 // ── REPORTS ──────────────────────────────────────────────────
-function renderReports() {
-  destroyChart('reportsBar');
-  const ctx = document.getElementById('reportsBar').getContext('2d');
-  const allMonths12r = getMonthlyChartData();
-  charts.reportsBar = new Chart(ctx,{
-    type:'bar',
-    data:{
-      labels: allMonths12r.labels,
-      datasets:[
-        {label:'Income',data:allMonths12r.income,backgroundColor:SAGE+'CC',borderRadius:5},
-        {label:'Expenses',data:allMonths12r.expenses,backgroundColor:TERRA+'99',borderRadius:5},
-        {label:'Savings',data:allMonths12r.income.map((v,i)=>v-allMonths12r.expenses[i]),backgroundColor:TAN+'CC',borderRadius:5},
-      ]
-    },
-    options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{labels:{font:{family:'DM Sans'},color:chartText(),boxWidth:10}}},scales:{x:{grid:{display:false},ticks:{font:{family:'Inter',size:11},color:chartMuted(),maxRotation:0}},y:{grid:{color:chartGrid()},ticks:{callback:v=>fmt(v),font:{family:'Inter',size:11},color:chartMuted()}}}}
-  });
-
-  destroyChart('spendingDonut');
-  const dCtx = document.getElementById('spendingDonut').getContext('2d');
-  const colors=['#C9748F','#7B6BA0','#7A9E87','#E8A4B8','#A090C0','#A0C4AC','#9B6B82','#C4A0B4','#5A8A70','#D4B0C8','#B0A0D0','#80B090'];
-  charts.spendingDonut = new Chart(dCtx,{
-    type:'doughnut',
-    data:{
-      labels: getExpenseCats(),
-      datasets:[{
-        data: getExpenseCats().map(cat=>data.transactions.filter(t=>t.cat===cat).reduce((a,t)=>a+t.amount,0)),
-        backgroundColor:colors,borderWidth:0
-      }]
-    },
-    options:{responsive:true,maintainAspectRatio:false,cutout:'55%',plugins:{legend:{position:'right',labels:{font:{family:'Inter',size:10},color:chartText(),boxWidth:10,padding:8}}}}
-  });
-
+// Annual Summary table only — the bar chart and spending donut that used to
+// live here were exact duplicates of what's already on the Dashboard, so
+// they were cut. This keeps just the one thing that's genuinely unique:
+// the full multi-year history table.
+function renderAnnualSummary() {
   const shortMonths=['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
-  // Sort ascending: oldest first (Jan → Dec), then by year
   const allHistory = [...(data.monthlyHistory||[])].sort((a,b)=>{
     const yearA = a.year || 2025;
     const yearB = b.year || 2025;
@@ -3683,7 +3633,9 @@ function renderReports() {
     return shortMonths.indexOf(a.month) - shortMonths.indexOf(b.month);
   });
 
-  document.getElementById('annual-body').innerHTML = allHistory.length
+  const el = document.getElementById('annual-body');
+  if(!el) return;
+  el.innerHTML = allHistory.length
     ? allHistory.map(h=>{
         const cf = h.income - h.expenses;
         const yr = h.year ? ` '${String(h.year).slice(2)}` : '';
@@ -3911,11 +3863,10 @@ function mobileNav(id, el) {
   // Update bottom nav active state
   document.querySelectorAll('.bottom-nav-item').forEach(i => i.classList.remove('active'));
   if(el) el.classList.add('active');
-  // Also sync sidebar nav
-  const sidebarItems = document.querySelectorAll('.nav-item');
-  sidebarItems.forEach(i => i.classList.remove('active'));
-  const pageMap = {dashboard:0,budget:1,expenses:2,bills:3,debt:4,goals:5,networth:6,reports:7,settings:8};
-  if(pageMap[id] !== undefined) sidebarItems[pageMap[id]]?.classList.add('active');
+  // Also sync sidebar nav — find by onclick content instead of a fragile index map
+  document.querySelectorAll('.nav-item').forEach(i => i.classList.remove('active'));
+  const match = document.querySelector(`.nav-item[onclick*="showPage('${id}'"]`);
+  if(match) match.classList.add('active');
   showPage(id, null);
   closeSidebar();
 }
@@ -4054,7 +4005,7 @@ function closeMonth() {
 
   // Auto-snapshot net worth
   const assets = data.assets.reduce((a,x)=>a+x.value,0);
-  const liab = data.liabilities.reduce((a,x)=>a+x.value,0);
+  const liab = data.debts.reduce((a,x)=>a+x.balance,0);
   const nw = assets - liab;
   const nwEntry = data.networthHistory.find(h=>h.month===monthKey && h.year===year);
   if(nwEntry) nwEntry.value=nw;
@@ -4340,7 +4291,7 @@ function autoSnapshotNetWorth() {
   if(lastSnap === thisMonth) return; // already snapped this month
 
   const assets = data.assets.reduce((a,x)=>a+x.value,0);
-  const liab = data.liabilities.reduce((a,x)=>a+x.value,0);
+  const liab = data.debts.reduce((a,x)=>a+x.balance,0);
   const nw = assets - liab;
   if(nw === 0) return; // don't snap empty data
 
@@ -4363,10 +4314,37 @@ function checkDebtMilestones() {
   });
 }
 
-// Patch pageTitles
-pageTitles.whatif = 'What-If Calculator';
-pageTitles.billcal = 'Bill Calendar';
-pageTitles.starthere = 'Start Here';
+// (pageTitles fully defined above now — no patches needed)
+
+// ── BILLS LIST / CALENDAR TOGGLE ───────────────────────────────
+function setBillsView(view) {
+  const listView = document.getElementById('bills-list-view');
+  const calView = document.getElementById('bills-calendar-view');
+  const listBtn = document.getElementById('bills-view-list-btn');
+  const calBtn = document.getElementById('bills-view-cal-btn');
+  if(view === 'calendar') {
+    listView.style.display = 'none';
+    calView.style.display = 'block';
+    calBtn.style.background = 'var(--rose)'; calBtn.style.borderColor = 'var(--rose-light)'; calBtn.style.color = 'white';
+    listBtn.style.background = 'var(--cream)'; listBtn.style.borderColor = 'var(--linen)'; listBtn.style.color = 'var(--mid)';
+    renderBillCalendar();
+  } else {
+    listView.style.display = 'block';
+    calView.style.display = 'none';
+    listBtn.style.background = 'var(--rose)'; listBtn.style.borderColor = 'var(--rose-light)'; listBtn.style.color = 'white';
+    calBtn.style.background = 'var(--cream)'; calBtn.style.borderColor = 'var(--linen)'; calBtn.style.color = 'var(--mid)';
+  }
+}
+
+// ── WHAT-IF COLLAPSIBLE TOGGLE (folded into Debt Payoff) ───────
+function toggleWhatIf() {
+  const section = document.getElementById('whatif-section');
+  const icon = document.getElementById('whatif-toggle-icon');
+  const isOpen = section.style.display === 'block';
+  section.style.display = isOpen ? 'none' : 'block';
+  icon.textContent = isOpen ? '▾ Show' : '▴ Hide';
+  if(!isOpen) renderWhatIf(); // refresh calculation when opened
+}
 
 // ── PWA INSTALL ───────────────────────────────────────────────
 let deferredInstallPrompt = null;
