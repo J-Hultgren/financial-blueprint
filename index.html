@@ -2147,7 +2147,14 @@
     <div class="card" style="margin-top:16px">
       <div class="card-title">Annual Summary — Year-over-Year History</div>
       <table class="data-table" id="annual-table">
-        <thead><tr><th>Month</th><th style="text-align:right">Income</th><th style="text-align:right">Expenses</th><th style="text-align:right">Cashflow</th></tr></thead>
+        <thead><tr>
+          <th>Month</th>
+          <th style="text-align:right">Income</th>
+          <th style="text-align:right">Planned<br>Expenses</th>
+          <th style="text-align:right">Actual<br>Expenses</th>
+          <th style="text-align:right">Planned<br>Cashflow</th>
+          <th style="text-align:right">Actual<br>Cashflow</th>
+        </tr></thead>
         <tbody id="annual-body"></tbody>
       </table>
     </div>
@@ -2786,21 +2793,24 @@ function renderDashboardInsight({ totalIncome, totalExpenses, actualSpent, total
 }
 
 function getMonthlyChartData() {
-  const shortMonths = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
   const yp = document.getElementById('yearPicker');
   const selectedYear = yp ? parseInt(yp.value) : new Date().getFullYear();
-  const labels = [], income = [], expenses = [];
+  const labels = [], income = [], plannedExpenses = [], actualExpenses = [];
 
   for(let m = 0; m < 12; m++) {
-    const mKey = shortMonths[m];
-    labels.push(mKey);
-    const entry = data.monthlyHistory.find(h =>
-      h.month === mKey && (h.year === selectedYear || (!h.year && selectedYear === new Date().getFullYear()))
-    );
-    income.push(entry?.income || 0);
-    expenses.push(entry?.expenses || 0);
+    labels.push(MONTHS_SHORT[m]);
+    const key = budgetKey(selectedYear, m);
+    const mb = data.monthlyBudgets?.[key];
+
+    if(mb) {
+      income.push(mb.income.reduce((a,r)=>a+r.planned,0));
+      plannedExpenses.push(mb.expenses.reduce((a,r)=>a+r.planned,0));
+      actualExpenses.push(mb.expenses.reduce((a,r)=>a+r.actual,0));
+    } else {
+      income.push(0); plannedExpenses.push(0); actualExpenses.push(0);
+    }
   }
-  return { labels, income, expenses };
+  return { labels, income, plannedExpenses, actualExpenses };
 }
 
 // ── DASHBOARD ─────────────────────────────────────────────────
@@ -2860,7 +2870,7 @@ function renderDashboard() {
     options:{responsive:true,maintainAspectRatio:true,cutout:'68%',plugins:{legend:{display:false},tooltip:{callbacks:{label:c=>`${c.label}: ${fmt(c.raw)}`}}}}
   });
 
-  // Income/Expense bar — full 12 months with year labels
+  // Income vs Planned vs Actual Expenses — full 12 months
   destroyChart('incomeExpenseBar');
   const barCtx = document.getElementById('incomeExpenseBar').getContext('2d');
   const allMonths12 = getMonthlyChartData();
@@ -2870,26 +2880,32 @@ function renderDashboard() {
       labels: allMonths12.labels,
       datasets:[
         {label:'Income', data:allMonths12.income, backgroundColor:SAGE+'CC', borderRadius:4},
-        {label:'Expenses', data:allMonths12.expenses, backgroundColor:TERRA+'99', borderRadius:4},
+        {label:'Planned', data:allMonths12.plannedExpenses, backgroundColor:MAUVE+'88', borderRadius:4},
+        {label:'Actual', data:allMonths12.actualExpenses, backgroundColor:TERRA+'CC', borderRadius:4},
       ]
     },
     options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{labels:{font:{family:'DM Sans'},color:chartText(),boxWidth:10,padding:12}}},scales:{x:{grid:{display:false},ticks:{font:{family:'Inter',size:10},color:chartMuted(),maxRotation:0}},y:{grid:{color:chartGrid()},ticks:{callback:v=>fmt(v),font:{family:'Inter',size:10},color:chartMuted()}}}}
   });
 
-  // Bills preview — the 5 soonest upcoming, sorted by due date, not array order
+  // Bills preview — the 5 genuinely soonest upcoming, based on today's real date
   const upcomingBills = [...data.bills]
     .filter(b => b.amount > 0)
-    .sort((a,b) => dueDateNum(a.due) - dueDateNum(b.due))
+    .sort((a,b) => daysUntilDue(a.due) - daysUntilDue(b.due))
     .slice(0,5);
   const billHtml = upcomingBills.length
-    ? upcomingBills.map(b=>`
+    ? upcomingBills.map(b=>{
+        const days = daysUntilDue(b.due);
+        const dueSoon = days <= 7;
+        const dueLabel = days === 0 ? 'Due today' : days === 1 ? 'Due tomorrow' : `Due ${b.due}`;
+        return `
         <div class="bill-item">
-          <div><span class="bill-status ${dueDateNum(b.due)<=10?'due-soon':'upcoming'}"></span>
+          <div><span class="bill-status ${dueSoon?'due-soon':'upcoming'}"></span>
             <span class="bill-name">${b.name}</span>
-            <div style="padding-left:16px"><span class="bill-due">Due ${b.due}</span></div>
+            <div style="padding-left:16px"><span class="bill-due">${dueLabel}</span></div>
           </div>
           <span class="bill-amount">${fmt(b.amount)}</span>
-        </div>`).join('')
+        </div>`;
+      }).join('')
     : `<div style="color:var(--light);font-size:12px;padding:8px 0">No bills entered yet</div>`;
   document.getElementById('dash-bills').innerHTML = billHtml;
 
@@ -3453,7 +3469,22 @@ function deleteTransaction(i) {
 function dueDateNum(due) {
   if(!due) return 99;
   const n = parseInt(due);
-  return isNaN(n) ? 99 : n; // non-numeric due dates (e.g. "Payroll") sort last
+  return isNaN(n) ? 99 : n; // non-numeric due dates (e.g. "Payroll") sort last — used for the List view's simple 1st→31st sort
+}
+
+// Returns how many days from today until this bill's due date next occurs,
+// wrapping to next month if the day-of-month has already passed this month.
+// This is what "upcoming" should actually mean — genuinely knows today's date.
+function daysUntilDue(due) {
+  const dayOfMonth = parseInt(due);
+  if(isNaN(dayOfMonth)) return 9999; // non-numeric due dates (e.g. "Payroll") sort last
+  const today = new Date();
+  today.setHours(0,0,0,0);
+  let candidate = new Date(today.getFullYear(), today.getMonth(), dayOfMonth);
+  if(candidate < today) {
+    candidate = new Date(today.getFullYear(), today.getMonth()+1, dayOfMonth);
+  }
+  return Math.round((candidate - today) / 86400000);
 }
 
 // ── DEBTS → BILLS SYNC ──────────────────────────────────────────
@@ -3815,28 +3846,53 @@ function deleteAsset(i) { data.assets.splice(i,1); renderNetworth(); triggerAuto
 // they were cut. This keeps just the one thing that's genuinely unique:
 // the full multi-year history table.
 function renderAnnualSummary() {
-  const shortMonths=['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
-  const allHistory = [...(data.monthlyHistory||[])].sort((a,b)=>{
-    const yearA = a.year || 2025;
-    const yearB = b.year || 2025;
-    if(yearA !== yearB) return yearA - yearB;
-    return shortMonths.indexOf(a.month) - shortMonths.indexOf(b.month);
-  });
-
   const el = document.getElementById('annual-body');
   if(!el) return;
-  el.innerHTML = allHistory.length
-    ? allHistory.map(h=>{
-        const cf = h.income - h.expenses;
-        const yr = h.year ? ` '${String(h.year).slice(2)}` : '';
-        return `<tr>
-          <td style="font-weight:500">${h.month}${yr}</td>
-          <td style="text-align:right">${fmt(h.income)}</td>
-          <td style="text-align:right">${fmt(h.expenses)}</td>
-          <td style="text-align:right;font-weight:600;color:${cf>=0?'var(--sage)':'var(--rose)'}">${fmt(cf)}</td>
-        </tr>`;
-      }).join('')
-    : `<tr><td colspan="4" style="color:var(--light);text-align:center;padding:20px">No history yet — use Close Month at end of each month to build your record.</td></tr>`;
+
+  // Walk every month that has a budget created (pregenerateFutureMonths already
+  // creates the next 12 ahead), so Planned figures show even for months you
+  // haven't "closed" yet — Actual only shows real logged numbers.
+  const rows = [];
+  if(data.monthlyBudgets) {
+    Object.keys(data.monthlyBudgets).sort().forEach(key => {
+      const [yearStr, monthStr] = key.split('-');
+      const year = parseInt(yearStr);
+      const monthIdx = parseInt(monthStr) - 1;
+      const mb = data.monthlyBudgets[key];
+
+      const incomePlanned = mb.income.reduce((a,r)=>a+r.planned,0);
+      const incomeActual = mb.income.reduce((a,r)=>a+r.actual,0);
+      const expPlanned = mb.expenses.reduce((a,r)=>a+r.planned,0);
+      const expActual = mb.expenses.reduce((a,r)=>a+r.actual,0);
+
+      rows.push({
+        month: MONTHS_SHORT[monthIdx], year,
+        income: incomePlanned, // income planned is what we display in the Income column
+        expPlanned, expActual,
+        cfPlanned: incomePlanned - expPlanned,
+        cfActual: incomeActual - expActual,
+        hasActuals: incomeActual > 0 || expActual > 0
+      });
+    });
+  }
+
+  if(!rows.length) {
+    el.innerHTML = `<tr><td colspan="6" style="color:var(--light);text-align:center;padding:20px">No budget months yet — visit the Budget tab to get started.</td></tr>`;
+    return;
+  }
+
+  el.innerHTML = rows.map(r => {
+    const yr = ` '${String(r.year).slice(2)}`;
+    const cfActualColor = r.hasActuals ? (r.cfActual>=0 ? 'var(--sage)' : 'var(--rose)') : 'var(--light)';
+    return `<tr>
+      <td style="font-weight:500">${r.month}${yr}</td>
+      <td style="text-align:right">${fmt(r.income)}</td>
+      <td style="text-align:right;color:var(--mid)">${fmt(r.expPlanned)}</td>
+      <td style="text-align:right">${r.hasActuals ? fmt(r.expActual) : '<span style="color:var(--light)">—</span>'}</td>
+      <td style="text-align:right;color:var(--mid)">${fmt(r.cfPlanned)}</td>
+      <td style="text-align:right;font-weight:600;color:${cfActualColor}">${r.hasActuals ? fmt(r.cfActual) : '<span style="color:var(--light);font-weight:400">—</span>'}</td>
+    </tr>`;
+  }).join('');
 }
 
 // ── SAVE / LOAD ──────────────────────────────────────────────
@@ -4409,7 +4465,8 @@ function renderBillCalendar() {
   for(let i=firstDay+daysInMonth; i<totalCells; i++) html+=`<div class="cal-day other-month"></div>`;
 
   document.getElementById('billcal-grid').innerHTML = html;
-  document.getElementById('billcal-total').textContent = fmt(total);
+  const totalEl = document.getElementById('billcal-total');
+  if(totalEl) totalEl.textContent = fmt(total); // element may not exist in calendar-only view, that's fine
   document.getElementById('billcal-first').textContent = fmt(firstHalf);
   document.getElementById('billcal-second').textContent = fmt(secondHalf);
 }
